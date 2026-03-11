@@ -559,7 +559,10 @@
         <span>Luxury Travel · Storytelling · AI-Optimized Experiences ™</span>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.5.2/dist/vapi.min.js"></script>
+    <script type="module">
+        import Vapi from "https://esm.sh/@vapi-ai/web@2.5.2";
+        window.Vapi = Vapi.default || Vapi;
+    </script>
 
     <script>
         const RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
