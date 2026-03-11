@@ -66,60 +66,30 @@
     <div id="status">System Online | Ready for Voice</div>
 
     <script>
-        // --- 1. CONFIGURATION ---
-        const RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
-        const VAPI_PUBLIC_KEY = "3bfe6c30-430a-4ee2-b584-7044d5adab0a"; 
-        const ASSISTANT_ID = "fcb09257-e877-494d-a7c9-d3a152da0059"; // FIXED THE VARIABLE NAME
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
-        // --- 2. VAPI VOICE ENGINE ---
-        const vapi = new Vapi(VAPI_PUBLIC_KEY);
-        const btn = document.getElementById('vapi-btn');
-        const status = document.getElementById('status');
+<script>
+    // 2. Wrap your initialization in a check to ensure 'io' exists
+    let socket;
+    
+    function connectSocket() {
+        if (typeof io !== 'undefined') {
+            socket = io("https://kiosk-bridge.onrender.com", {
+                reconnection: true,
+                reconnectionDelayMax: 15000
+            });
+            console.log("✅ Socket.io initialized successfully.");
+            
+            // Re-bind your listeners here
+            setupSocketListeners(); 
+        } else {
+            console.error("❌ Socket.io failed to load. Retrying in 1s...");
+            setTimeout(connectSocket, 1000);
+        }
+    }
 
-        btn.addEventListener('click', () => {
-            vapi.start(ASSISTANT_ID); // UPDATED TO MATCH NEW VARIABLE NAME
-            btn.innerText = "Listening...";
-            btn.style.background = "#ff4b2b";
-            status.innerText = "Microphone Active | Speak Now";
-        });
-
-        vapi.on('call-end', () => {
-            btn.innerText = "Talk to Concierge";
-            btn.style.background = "var(--gold)";
-            status.innerText = "Call Ended | Ready for Voice";
-        });
-
-        // --- 3. SOCKET.IO & VIBE LOGIC ---
-        const socket = io(RENDER_BRIDGE_URL);
-
-        socket.on("COMMAND_UPDATE_UI", (data) => {
-            console.log("UI Update Received:", data);
-            const body = document.body;
-            const content = document.getElementById('content');
-
-            if (data.vibe === "rain") {
-                body.style.background = "radial-gradient(circle, #001f3f 0%, #000000 100%)";
-            } else if (data.vibe === "luxury") {
-                body.style.background = "radial-gradient(circle, #4d3d0d 0%, #1a1a1a 100%)";
-                content.innerHTML = `<h1 style="color: var(--gold); font-size: 4rem; animation: fadeIn 1s;">WELCOME VIP</h1>`;
-            } else if (data.vibe === "adventure") {
-                body.style.background = "radial-gradient(circle, #660000 0%, #000000 100%)";
-            }
-
-            const delay = data.vibe === "luxury" ? 2000 : 0;
-
-            setTimeout(() => {
-                if(data.viewType === "tour_details" || data.viewType === "booking_qr") {
-                    content.innerHTML = `
-                        <div class="qr-card">
-                            <h2 style="margin-top:0; font-size: 1.8rem;">${data.tourName}</h2>
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.qrUrl)}" alt="QR Code">
-                            <p style="margin-bottom:0;"><b>Scan to book instantly</b></p>
-                        </div>
-                    `;
-                }
-            }, delay);
-        });
-    </script>
+    // Call it immediately
+    connectSocket();
+</script>
 </body>
 </html>
