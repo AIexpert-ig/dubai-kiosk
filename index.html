@@ -530,240 +530,64 @@
 
     <script>
         /* ══════════════════════════════════════════
-           CREDENTIALS
-        ══════════════════════════════════════════ */
-        const RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
-        const VAPI_PUBLIC_KEY   = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
-        const ASSISTANT_ID      = "fcb09257-e877-494d-a7c9-d3a152da0059";
+   CREDENTIALS & INSTANCE
+   ══════════════════════════════════════════ */
+const RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
+const VAPI_PUBLIC_KEY   = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
+const ASSISTANT_ID      = "fcb09257-e877-494d-a7c9-d3a152da0059";
 
-        /* ══════════════════════════════════════════
-           DOM
-        ══════════════════════════════════════════ */
-        const agentVideo     = document.getElementById('agent-video');
-        const tapZone        = document.getElementById('tap-zone');
-        const sessionLabel   = document.getElementById('session-label');
-        const endBtn         = document.getElementById('end-btn');
-        const thePass        = document.getElementById('the-pass');
-        const passTourName   = document.getElementById('pass-tour-name');
-        const passQrImg      = document.getElementById('pass-qr-img');
-        const passDismiss    = document.getElementById('pass-dismiss');
-        const aiHud          = document.getElementById('ai-hud');
-        const aiLabel        = document.getElementById('ai-label');
-        const offlineBanner  = document.getElementById('offline-banner');
-        const reconnectBtn   = document.getElementById('reconnect-btn');
+let vapiInstance = null;
 
-        /* ══════════════════════════════════════════
-           VIDEO STATE
-        ══════════════════════════════════════════ */
-        function setVideoState(s) {
-            agentVideo.classList.remove('v-listening','v-speaking','v-thinking','v-guest');
-            if (s !== 'idle') agentVideo.classList.add(`v-${s}`);
-        }
+// This function now handles the instance correctly
+function bootVapi() {
+    // Check if the module attached itself to window (common in browser builds)
+    // or if we need to wait for it.
+    if (typeof Vapi !== 'undefined') {
+        vapiInstance = new Vapi(VAPI_PUBLIC_KEY);
+        setupVapiListeners();
+        setAIState('idle');
+        console.log("✅ Vapi Instance Created");
+    } else {
+        // If it's still undefined, the vapi.js file is likely the wrong build (Node vs Browser)
+        activateGuestMode();
+    }
+}
 
-        /* ══════════════════════════════════════════
-           AI STATE MACHINE
-        ══════════════════════════════════════════ */
-        const HUD = {
-            idle:      { cls:'s-idle',      lbl:'System Online'       },
-            listening: { cls:'s-listening', lbl:'Listening...'        },
-            thinking:  { cls:'s-thinking',  lbl:'Thinking...'         },
-            speaking:  { cls:'s-speaking',  lbl:'Speaking...'         },
-            executing: { cls:'s-executing', lbl:'Preparing...'        },
-            offline:   { cls:'s-offline',   lbl:'Bridge Offline'      },
-            guest:     { cls:'s-guest',     lbl:'Guest Mode'          },
-        };
+// Separate the listeners so we don't crash if Vapi is missing
+function setupVapiListeners() {
+    if(!vapiInstance) return;
 
-        function setAIState(key) {
-            const s = HUD[key] || HUD.idle;
-            aiHud.className     = s.cls;
-            aiLabel.textContent = s.lbl;
-            document.body.classList.remove('st-listening','st-speaking','st-thinking');
-            if (key === 'listening') document.body.classList.add('st-listening');
-            if (key === 'speaking')  document.body.classList.add('st-speaking');
-            if (key === 'thinking')  document.body.classList.add('st-thinking');
-            const lblMap = {
-                listening:'Listening to You...', thinking:'Thinking...',
-                speaking:'Your Agent is Speaking', executing:'Preparing Your Info...',
-                idle:'Connected',
-            };
-            if (lblMap[key]) sessionLabel.textContent = lblMap[key];
-            const videoMap = {
-                listening:'listening', speaking:'speaking',
-                thinking:'thinking',   executing:'thinking', guest:'guest',
-            };
-            setVideoState(videoMap[key] || 'idle');
-        }
+    vapiInstance.on('call-start', () => {
+        document.body.classList.add('call-active');
+        setAIState('idle');
+    });
 
-        /* ══════════════════════════════════════════
-           VIBE
-        ══════════════════════════════════════════ */
-        function setVibe(v) {
-            document.body.classList.remove('vibe-rain','vibe-luxury','vibe-adventure');
-            if (v) document.body.classList.add(`vibe-${v}`);
-        }
+    vapiInstance.on('call-end', () => {
+        document.body.classList.remove('call-active');
+        setAIState('idle');
+    });
 
-        /* ══════════════════════════════════════════
-           THE PASS
-        ══════════════════════════════════════════ */
-        function openPass(name, url) {
-            passTourName.textContent = name || 'Your Experience';
-            passQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
-            thePass.classList.add('open');
-            document.body.classList.add('pass-open');
-        }
-        function closePass() {
-            thePass.classList.remove('open');
-            document.body.classList.remove('pass-open');
-        }
-        passDismiss.addEventListener('click', closePass);
+    vapiInstance.on('speech-start', () => setAIState('speaking'));
+    vapiInstance.on('speech-end',   () => setAIState('listening'));
+}
 
-        /* ══════════════════════════════════════════
-           OFFLINE
-        ══════════════════════════════════════════ */
-        function showOffline(show) {
-            offlineBanner.classList.toggle('visible', show);
-            if (show) setAIState('offline');
-        }
+/* ══════════════════════════════════════════
+   REPLACE YOUR TAP ZONE LOGIC WITH THIS
+   ══════════════════════════════════════════ */
+tapZone.addEventListener('click', () => {
+    if (!vapiInstance) {
+        bootVapi(); // Try to boot on first click
+    }
+    
+    if (vapiInstance) {
+        vapiInstance.start(ASSISTANT_ID);
+    }
+});
 
-        /* ══════════════════════════════════════════
-           SOCKET.IO
-           rejectUnauthorized: false  — allows connection
-             through self-signed or corporate SSL proxies
-             that intercept HTTPS traffic (common in hotels,
-             airports, and enterprise networks).
-           transports: ['websocket','polling'] — if WebSocket
-             is blocked by the firewall, falls back to
-             long-polling over regular HTTP automatically.
-        ══════════════════════════════════════════ */
-        const socket = io(RENDER_BRIDGE_URL, {
-            transports:           ['websocket', 'polling'],
-            rejectUnauthorized:   false,
-            reconnection:         true,
-            reconnectionAttempts: Infinity,
-            reconnectionDelay:    2000,
-            reconnectionDelayMax: 15000,
-            timeout:              10000,
-        });
-
-        socket.on('connect', () => {
-            showOffline(false);
-            // Don't override guest state if Vapi failed
-            if (!document.body.classList.contains('guest-mode')) setAIState('idle');
-            console.log('✅ Socket:', socket.id, '| transport:', socket.io.engine.transport.name);
-        });
-        socket.on('disconnect',    (r)   => { showOffline(true);  console.warn('🔌', r); });
-        socket.on('connect_error', (err) => { showOffline(true);  console.error('❌', err.message); });
-
-        socket.on('AI_STATE_UPDATE', ({ state }) => {
-            if (document.body.classList.contains('guest-mode')) return; // ignore in guest mode
-            const map = { LISTENING:'listening', THINKING:'thinking', SPEAKING:'speaking', EXECUTING:'executing', IDLE:'idle' };
-            setAIState(map[state] || 'idle');
-        });
-
-        socket.on('COMMAND_UPDATE_UI', (data) => {
-            const { viewType, tourName, qrUrl, vibe } = data;
-            setVibe(vibe);
-            if (!document.body.classList.contains('guest-mode')) setAIState('executing');
-            const delay = vibe === 'luxury' ? 1800 : 600;
-            if (viewType === 'tour_details' || viewType === 'booking_qr') {
-                setTimeout(() => { openPass(tourName, qrUrl); setAIState('idle'); }, delay);
-            } else {
-                setTimeout(() => setAIState('idle'), delay);
-            }
-        });
-
-        /* ══════════════════════════════════════════
-           GUEST MODE
-           Activated when vapi.js is absent or broken.
-           Character stays visible. Voice is off.
-           Manual Reconnect reloads the page (which
-           re-executes the self-hosted script tag).
-        ══════════════════════════════════════════ */
-        function activateGuestMode() {
-            console.warn('⚠ Vapi not available — activating Guest Mode.');
-            document.body.classList.add('guest-mode');
-            tapZone.style.pointerEvents = 'none';
-            setAIState('guest');
-        }
-
-        reconnectBtn.addEventListener('click', () => {
-            // Hard reload re-executes <script src="vapi.js">
-            // If the file is now in the repo, this will succeed.
-            reconnectBtn.disabled = true;
-            reconnectBtn.classList.add('retrying');
-            setTimeout(() => window.location.reload(), 500);
-        });
-
-        /* ══════════════════════════════════════════
-           VAPI BOOTSTRAP
-           vapi.js is loaded as a blocking script tag above.
-           By this point in execution, window.Vapi is either
-           defined (file exists in repo) or undefined (file
-           missing / network block caught it).
-        ══════════════════════════════════════════ */
-        function bootVapi() {
-            // Guard: vapi.js loaded but Vapi class is not exported to window
-            if (typeof Vapi === 'undefined') {
-                activateGuestMode();
-                return;
-            }
-
-            console.log('✅ Vapi confirmed. ASSISTANT_ID:', ASSISTANT_ID);
-            const vapi = new Vapi(VAPI_PUBLIC_KEY);
-
-            tapZone.style.pointerEvents = 'auto';
-            setAIState('idle');
-
-            // Full-screen tap to start
-            tapZone.addEventListener('click', () => {
-                if (document.body.classList.contains('call-active')) return;
-                console.log('🎤 vapi.start() →', ASSISTANT_ID);
-                vapi.start(ASSISTANT_ID);
-                document.body.classList.add('call-active');
-                sessionLabel.textContent = 'Connecting...';
-                setAIState('thinking');
-            });
-
-            endBtn.addEventListener('click', () => vapi.stop());
-
-            // Speech-reactive video filters
-            vapi.on('speech-start', () => setAIState('listening'));
-            vapi.on('speech-end',   () => setAIState('thinking'));
-
-            vapi.on('message', (msg) => {
-                if (msg.type === 'speech-update') {
-                    if (msg.role === 'assistant' && msg.status === 'started') setAIState('speaking');
-                    if (msg.role === 'assistant' && msg.status === 'stopped')  setAIState('idle');
-                }
-            });
-
-            vapi.on('call-start', () => { sessionLabel.textContent = 'Connected'; setAIState('idle'); });
-
-            vapi.on('call-end', () => {
-                document.body.classList.remove('call-active');
-                setVibe(null); closePass();
-                setAIState('idle'); setVideoState('idle');
-                tapZone.style.pointerEvents = 'auto';
-            });
-
-            vapi.on('error', (err) => {
-                console.error('❌ Vapi error:', err);
-                document.body.classList.remove('call-active');
-                setAIState('idle');
-            });
-        }
-
-        /* ══════════════════════════════════════════
-           ENTRY POINT
-           Use DOMContentLoaded — no need for window.onload
-           because vapi.js is a blocking script tag and is
-           already executed by the time this inline script runs.
-        ══════════════════════════════════════════ */
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', bootVapi);
-        } else {
-            bootVapi();
-        }
+// Run boot check on load
+window.onload = () => {
+    setTimeout(bootVapi, 500); // Give the module 500ms to register
+};
     </script>
 </body>
 </html>
