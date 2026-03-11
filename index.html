@@ -572,22 +572,33 @@ function setupVapiListeners() {
 }
 
 /* ══════════════════════════════════════════
-   REPLACE YOUR TAP ZONE LOGIC WITH THIS
+   THE ONLY LOGICAL CLICK HANDLER
    ══════════════════════════════════════════ */
 tapZone.addEventListener('click', () => {
-    if (!vapiInstance) {
-        bootVapi(); // Try to boot on first click
-    }
-    
-    if (vapiInstance) {
-        vapiInstance.start(ASSISTANT_ID);
-    }
-});
+    console.log("👆 Tap Zone Triggered");
 
-// Run boot check on load
-window.onload = () => {
-    setTimeout(bootVapi, 500); // Give the module 500ms to register
-};
+    // 1. Check if the Vapi library actually loaded
+    if (typeof Vapi === 'undefined') {
+        console.error("❌ Vapi is still undefined. The library failed to load.");
+        activateGuestMode();
+        return;
+    }
+
+    // 2. Initialize the instance if it doesn't exist
+    if (!vapiInstance) {
+        try {
+            vapiInstance = new Vapi(VAPI_PUBLIC_KEY);
+            setupVapiListeners(); // Ensure your listeners are attached
+        } catch (err) {
+            console.error("❌ Failed to initialize Vapi:", err);
+            return;
+        }
+    }
+
+    // 3. Start the call
+    console.log("🚀 Starting Vapi Call...");
+    vapiInstance.start(ASSISTANT_ID);
+});
     </script>
 </body>
 </html>
