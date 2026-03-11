@@ -4,409 +4,220 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Travel Expert ™ | The AI Concierge</title>
-
-    <!--
-        SOCKET.IO — version-locked.
-        If this CDN is also blocked, host socket.io.min.js
-        in your GitHub repo and change to: <script src="socket.io.js"></script>
-    -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
-    <!--
-        VAPI — SELF-HOSTED ONLY. No CDN. No external dependency.
-        File lives in YOUR GitHub Pages repo next to index.html.
-
-        HOW TO CREATE vapi.js (one time only):
-          npm install @vapi-ai/web
-          cp node_modules/@vapi-ai/web/dist/vapi.browser.js ./vapi.js
-          git add vapi.js && git commit -m "self-host vapi" && git push
-    -->
     <script src="vapi.js"></script>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@200;300;400;700&display=swap" rel="stylesheet">
-
     <style>
         :root {
-            --gold:         #D4AF37;
-            --gold-glow:    rgba(212,175,55,0.40);
-            --gold-dim:     rgba(212,175,55,0.14);
-            --black:        #050505;
-            --glass:        rgba(5,5,5,0.56);
-            --glass-border: rgba(212,175,55,0.16);
-            --blur:         22px;
-            --ease:         cubic-bezier(0.16, 1, 0.3, 1);
-            --ease-s:       cubic-bezier(0.4,  0, 0.2, 1);
+            --gold:#D4AF37; --gold-glow:rgba(212,175,55,0.40); --gold-dim:rgba(212,175,55,0.14);
+            --black:#050505; --glass:rgba(5,5,5,0.54); --glass-border:rgba(212,175,55,0.18);
+            --blur:24px; --ease:cubic-bezier(0.16,1,0.3,1); --ease-s:cubic-bezier(0.4,0,0.2,1);
         }
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body {
-            width: 100%; height: 100%;
-            overflow: hidden;
-            background: var(--black);
-            font-family: 'Montserrat', sans-serif;
-            color: white;
-        }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html,body{width:100%;height:100%;overflow:hidden;background:var(--black);font-family:'Montserrat',sans-serif;color:white}
 
-        /* ── L1: FULL-SCREEN AGENT VIDEO ──
-           Replace src="agent-idle.mp4" when your file is ready.
-           onerror hides the element cleanly if file is missing —
-           the gradient background shows through instead. */
-        #agent-video {
-            position: fixed; inset: 0;
-            width: 100%; height: 100%;
-            object-fit: cover; object-position: center top;
-            z-index: 0;
-            filter: brightness(0.80) saturate(1.05);
-            transform: scale(1);
-            transition: filter 1.1s var(--ease-s), transform 1.3s var(--ease-s);
-            animation: agentBreathe 7s var(--ease-s) infinite;
-        }
-        @keyframes agentBreathe {
-            0%, 100% { transform: scale(1.000); }
-            50%       { transform: scale(1.008); }
-        }
-        #agent-video.v-listening {
-            filter: brightness(1.05) saturate(1.20) contrast(1.08) drop-shadow(0 0 48px rgba(212,175,55,0.28));
-            transform: scale(1.022); animation: none;
-        }
-        #agent-video.v-speaking {
-            filter: brightness(1.20) saturate(1.30) contrast(1.10) drop-shadow(0 0 72px rgba(212,175,55,0.45));
-            transform: scale(1.032); animation: none;
-        }
-        #agent-video.v-thinking {
-            filter: brightness(0.88) saturate(1.10);
-            transform: scale(1.004); animation: none;
-        }
-        #agent-video.v-guest {
-            filter: brightness(0.70) saturate(0.35) contrast(0.95);
-            animation: agentBreathe 9s var(--ease-s) infinite;
-        }
-        #agent-video.v-reconnecting {
-            filter: brightness(0.65) saturate(0.55) sepia(0.25);
-            animation: agentBreathe 5s var(--ease-s) infinite;
-        }
-
-        /* ── L2: VIGNETTE ── */
-        #vignette {
-            position: fixed; inset: 0; z-index: 1; pointer-events: none;
+        /* L0: Cinematic CSS gradient — Dubai night scene, loads instantly */
+        body::before{
+            content:'';position:fixed;inset:0;z-index:-1;
             background:
-                radial-gradient(ellipse 70% 80% at 50% 45%, transparent 30%, rgba(5,5,5,0.72) 100%),
-                linear-gradient(to bottom, rgba(5,5,5,0.45) 0%, transparent 20%, transparent 65%, rgba(5,5,5,0.85) 100%);
+                radial-gradient(ellipse 60% 30% at 50% 100%,rgba(180,130,20,0.35) 0%,transparent 70%),
+                radial-gradient(ellipse 90% 20% at 50% 85%,rgba(120,60,10,0.50) 0%,transparent 60%),
+                linear-gradient(180deg,#020510 0%,#040820 30%,#0a0e20 60%,#120c05 85%,#050302 100%);
+            animation:bgPulse 12s ease-in-out infinite alternate;
         }
+        body::after{
+            content:'';position:fixed;inset:0;z-index:-1;
+            background:
+                radial-gradient(ellipse 20% 60% at 25% 70%,rgba(212,175,55,0.08) 0%,transparent 60%),
+                radial-gradient(ellipse 15% 50% at 75% 65%,rgba(212,175,55,0.06) 0%,transparent 60%);
+            animation:bgPulse 8s 2s ease-in-out infinite alternate;
+        }
+        @keyframes bgPulse{from{opacity:0.7}to{opacity:1}}
 
-        /* ── L3: VIBE TINT ── */
-        #vibe-tint {
-            position: fixed; inset: 0; z-index: 2;
-            pointer-events: none; opacity: 0;
-            transition: opacity 1.8s var(--ease-s);
+        /* L1: Video */
+        #bg-video{
+            position:fixed;inset:0;width:100%;height:100%;
+            object-fit:cover;object-position:center center;z-index:0;
+            filter:brightness(0.72) saturate(1.15) contrast(1.05);
+            transition:filter 1.2s var(--ease-s),transform 1.4s var(--ease-s);
+            animation:vidBreathe 8s var(--ease-s) infinite;
         }
-        body.vibe-rain      #vibe-tint { background: rgba(0,26,52,0.42);  opacity: 1; }
-        body.vibe-luxury    #vibe-tint { background: rgba(40,28,0,0.48);  opacity: 1; }
-        body.vibe-adventure #vibe-tint { background: rgba(40,0,0,0.48);   opacity: 1; }
+        @keyframes vidBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.006)}}
+        #bg-video.v-listening{filter:brightness(0.85) saturate(1.30) contrast(1.10) drop-shadow(0 0 60px rgba(212,175,55,0.22));transform:scale(1.018);animation:none}
+        #bg-video.v-speaking{filter:brightness(1.00) saturate(1.40) contrast(1.12) drop-shadow(0 0 90px rgba(212,175,55,0.35));transform:scale(1.028);animation:none}
+        #bg-video.v-thinking{filter:brightness(0.62) saturate(1.05) contrast(1.02);transform:scale(1.002);animation:none}
+        #bg-video.v-guest{filter:brightness(0.55) saturate(0.40);animation:vidBreathe 10s var(--ease-s) infinite}
+        #bg-video.v-reconnecting{filter:brightness(0.50) saturate(0.55) sepia(0.20);animation:vidBreathe 6s var(--ease-s) infinite}
 
-        /* ── RECONNECTING BANNER ── slides down from top on disconnect */
-        #reconnect-banner {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 25;
-            display: flex; align-items: center; justify-content: center; gap: 12px;
-            padding: 12px 24px;
-            background: rgba(40,18,0,0.88);
-            border-bottom: 1px solid rgba(251,146,60,0.25);
-            backdrop-filter: blur(14px);
-            transform: translateY(-100%);
-            transition: transform 0.55s var(--ease);
-        }
-        body.bridge-reconnecting #reconnect-banner { transform: translateY(0); }
-        .banner-dot {
-            width: 7px; height: 7px; border-radius: 50%;
-            background: #fb923c; flex-shrink: 0;
-            animation: dotPulse 1.4s ease infinite;
-        }
-        #reconnect-banner span {
-            font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase;
-            color: rgba(253,186,116,0.80);
-        }
+        /* L2: Vignette */
+        #vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+            background:radial-gradient(ellipse 75% 85% at 50% 50%,transparent 35%,rgba(2,3,10,0.65) 100%),
+                       linear-gradient(to bottom,rgba(2,3,10,0.50) 0%,transparent 22%,transparent 62%,rgba(2,3,10,0.80) 100%)}
 
-        /* ── AI STATE HUD ── */
-        #ai-hud {
-            position: fixed; top: 24px; right: 24px; z-index: 20;
-            display: flex; align-items: center; gap: 9px;
-            background: rgba(5,5,5,0.72);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 30px; padding: 9px 18px;
-            backdrop-filter: blur(16px);
-            transition: right 0.5s var(--ease), border-color 0.5s ease, box-shadow 0.5s ease;
-        }
-        body.pass-open #ai-hud { right: calc(330px + 24px); }
-        body.bridge-reconnecting #ai-hud {
-            border-color: rgba(251,146,60,0.35);
-            box-shadow: 0 0 18px rgba(251,146,60,0.12);
-        }
-        #ai-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: rgba(255,255,255,0.15); flex-shrink: 0;
-            transition: background 0.4s ease, box-shadow 0.4s ease;
-        }
-        #ai-label {
-            font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase;
-            color: rgba(255,255,255,0.30);
-            transition: color 0.4s ease; white-space: nowrap;
-        }
-        #ai-hud.s-idle          #ai-dot  { background: rgba(255,255,255,0.20); }
-        #ai-hud.s-idle          #ai-label { color: rgba(255,255,255,0.30); }
-        #ai-hud.s-listening     #ai-dot  { background:#4ade80; box-shadow:0 0 10px #4ade80; animation:dotPulse 1s ease infinite; }
-        #ai-hud.s-listening     #ai-label { color:#4ade80; }
-        #ai-hud.s-thinking      #ai-dot  { background:var(--gold); box-shadow:0 0 10px var(--gold); animation:dotPulse 0.7s ease infinite; }
-        #ai-hud.s-thinking      #ai-label { color:#F0D060; }
-        #ai-hud.s-speaking      #ai-dot  { background:#a78bfa; box-shadow:0 0 10px #a78bfa; animation:dotPulse 0.45s ease infinite; }
-        #ai-hud.s-speaking      #ai-label { color:#c4b5fd; }
-        #ai-hud.s-executing     #ai-dot  { background:#60a5fa; box-shadow:0 0 10px #60a5fa; animation:dotSpin 0.55s linear infinite; }
-        #ai-hud.s-executing     #ai-label { color:#93c5fd; }
-        /* RECONNECTING = orange, slow pulse */
-        #ai-hud.s-reconnecting  #ai-dot  { background:#fb923c; box-shadow:0 0 12px rgba(251,146,60,0.7); animation:dotPulse 1.6s ease infinite; }
-        #ai-hud.s-reconnecting  #ai-label { color:#fdba74; }
-        #ai-hud.s-guest         #ai-dot  { background:#fb923c; box-shadow:0 0 8px rgba(251,146,60,0.5); animation:dotPulse 2.4s ease infinite; }
-        #ai-hud.s-guest         #ai-label { color:#fdba74; }
+        /* L3: Vibe tint */
+        #vibe-tint{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity 1.8s var(--ease-s)}
+        body.vibe-rain   #vibe-tint{background:rgba(0,26,52,0.42);opacity:1}
+        body.vibe-luxury #vibe-tint{background:rgba(40,28,0,0.48);opacity:1}
+        body.vibe-adventure #vibe-tint{background:rgba(40,0,0,0.48);opacity:1}
 
-        @keyframes dotPulse {
-            0%,100% { transform:scale(1); opacity:1; }
-            50%      { transform:scale(1.65); opacity:0.5; }
+        /* Reconnect banner */
+        #reconnect-banner{
+            position:fixed;top:0;left:0;right:0;z-index:25;
+            display:flex;align-items:center;justify-content:center;gap:12px;
+            padding:12px 24px;background:rgba(30,12,0,0.90);
+            border-bottom:1px solid rgba(251,146,60,0.25);backdrop-filter:blur(14px);
+            transform:translateY(-100%);transition:transform 0.55s var(--ease);
         }
-        @keyframes dotSpin { to { transform:rotate(360deg); } }
+        body.bridge-reconnecting #reconnect-banner{transform:translateY(0)}
+        .banner-dot{width:7px;height:7px;border-radius:50%;background:#fb923c;flex-shrink:0;animation:dotPulse 1.4s ease infinite}
+        #reconnect-banner span{font-size:0.6rem;letter-spacing:0.3em;text-transform:uppercase;color:rgba(253,186,116,0.80)}
 
-        /* ── IDLE HERO ── */
-        #idle-hero {
-            position: fixed; bottom: 80px; left: 64px;
-            z-index: 5; max-width: 520px;
-            transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+        /* AI HUD */
+        #ai-hud{
+            position:fixed;top:24px;right:24px;z-index:20;
+            display:flex;align-items:center;gap:9px;
+            background:rgba(5,5,5,0.72);border:1px solid rgba(255,255,255,0.07);
+            border-radius:30px;padding:9px 18px;backdrop-filter:blur(16px);
+            transition:right 0.5s var(--ease),border-color 0.5s ease,box-shadow 0.5s ease;
         }
-        body.call-active         #idle-hero { opacity:0; transform:translateY(20px); pointer-events:none; }
-        body.guest-mode          #idle-hero { opacity:0; transform:translateY(20px); pointer-events:none; }
-        body.bridge-reconnecting #idle-hero { opacity:0.35; pointer-events:none; }
+        body.pass-open #ai-hud{right:calc(330px + 24px)}
+        body.bridge-reconnecting #ai-hud{border-color:rgba(251,146,60,0.35);box-shadow:0 0 18px rgba(251,146,60,0.12)}
+        #ai-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.15);flex-shrink:0;transition:background 0.4s ease,box-shadow 0.4s ease}
+        #ai-label{font-size:0.6rem;letter-spacing:0.25em;text-transform:uppercase;color:rgba(255,255,255,0.30);transition:color 0.4s ease;white-space:nowrap}
+        #ai-hud.s-idle #ai-dot{background:rgba(255,255,255,0.20)}
+        #ai-hud.s-idle #ai-label{color:rgba(255,255,255,0.30)}
+        #ai-hud.s-listening #ai-dot{background:#4ade80;box-shadow:0 0 10px #4ade80;animation:dotPulse 1s ease infinite}
+        #ai-hud.s-listening #ai-label{color:#4ade80}
+        #ai-hud.s-thinking #ai-dot{background:var(--gold);box-shadow:0 0 10px var(--gold);animation:dotPulse 0.7s ease infinite}
+        #ai-hud.s-thinking #ai-label{color:#F0D060}
+        #ai-hud.s-speaking #ai-dot{background:#a78bfa;box-shadow:0 0 10px #a78bfa;animation:dotPulse 0.45s ease infinite}
+        #ai-hud.s-speaking #ai-label{color:#c4b5fd}
+        #ai-hud.s-executing #ai-dot{background:#60a5fa;box-shadow:0 0 10px #60a5fa;animation:dotSpin 0.55s linear infinite}
+        #ai-hud.s-executing #ai-label{color:#93c5fd}
+        #ai-hud.s-reconnecting #ai-dot{background:#fb923c;box-shadow:0 0 12px rgba(251,146,60,0.7);animation:dotPulse 1.6s ease infinite}
+        #ai-hud.s-reconnecting #ai-label{color:#fdba74}
+        #ai-hud.s-guest #ai-dot{background:#fb923c;box-shadow:0 0 8px rgba(251,146,60,0.5);animation:dotPulse 2.4s ease infinite}
+        #ai-hud.s-guest #ai-label{color:#fdba74}
+        @keyframes dotPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.65);opacity:0.5}}
+        @keyframes dotSpin{to{transform:rotate(360deg)}}
 
-        .hero-eyebrow {
-            font-size:0.6rem; letter-spacing:0.5em; text-transform:uppercase;
-            color:var(--gold); margin-bottom:14px;
-            opacity:0; animation:slideUp 1s 0.4s var(--ease) forwards;
+        /* Centered glassmorphism hero */
+        #hero-center{
+            position:fixed;top:50%;left:50%;
+            transform:translate(-50%,-50%);
+            z-index:5;text-align:center;
+            transition:opacity 0.9s var(--ease),transform 0.9s var(--ease);
         }
-        .hero-title {
-            font-family:'Cormorant Garamond',serif;
-            font-size:clamp(3.2rem,6.5vw,5.8rem);
-            font-weight:300; line-height:0.95; letter-spacing:0.03em;
-            color:white; margin-bottom:10px;
-            opacity:0; animation:slideUp 1s 0.55s var(--ease) forwards;
-        }
-        .hero-title em { font-style:italic; color:var(--gold); }
-        .hero-sub {
-            font-size:0.68rem; letter-spacing:0.3em; text-transform:uppercase;
-            color:rgba(255,255,255,0.35); margin-bottom:44px;
-            opacity:0; animation:slideUp 1s 0.70s var(--ease) forwards;
-        }
-        @keyframes slideUp {
-            from { opacity:0; transform:translateY(18px); }
-            to   { opacity:1; transform:translateY(0); }
-        }
-        #touch-hint {
-            display:flex; align-items:center; gap:14px;
-            opacity:0; animation:slideUp 1s 0.9s var(--ease) forwards;
-        }
-        body.guest-mode          #touch-hint { display:none; }
-        body.bridge-reconnecting #touch-hint { display:none; }
-        .hint-ring {
-            width:56px; height:56px; border-radius:50%;
-            border:1px solid rgba(212,175,55,0.5);
-            display:flex; align-items:center; justify-content:center;
-            animation:ringPulse 2.4s var(--ease-s) infinite;
-        }
-        .hint-ring-inner {
-            width:36px; height:36px; border-radius:50%;
-            background:var(--gold-dim); border:1px solid var(--gold);
-        }
-        @keyframes ringPulse {
-            0%,100% { box-shadow:0 0 0 0    var(--gold-glow); }
-            50%      { box-shadow:0 0 0 14px rgba(212,175,55,0); }
-        }
-        .hint-text {
-            font-size:0.65rem; letter-spacing:0.3em; text-transform:uppercase;
-            color:rgba(255,255,255,0.40);
-        }
+        body.call-active #hero-center{opacity:0;transform:translate(-50%,calc(-50% - 20px));pointer-events:none}
+        body.guest-mode  #hero-center{opacity:0;transform:translate(-50%,calc(-50% - 20px));pointer-events:none}
+        body.bridge-reconnecting #hero-center{opacity:0.35;pointer-events:none}
 
-        /* ── GUEST MODE OVERLAY ── */
-        #guest-overlay {
-            position:fixed; inset:0; z-index:6;
-            display:flex; flex-direction:column;
-            align-items:center; justify-content:flex-end;
-            padding-bottom:80px;
-            pointer-events:none; opacity:0;
-            transition:opacity 0.8s var(--ease);
+        .hero-glass{
+            background:rgba(5,5,10,0.38);
+            border:1px solid rgba(212,175,55,0.20);
+            border-radius:28px;padding:52px 72px 56px;
+            backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+            box-shadow:0 32px 80px rgba(0,0,0,0.60),0 0 0 1px rgba(212,175,55,0.08),
+                       inset 0 1px 0 rgba(212,175,55,0.12),0 0 120px rgba(212,175,55,0.06);
+            max-width:620px;position:relative;
+            opacity:0;animation:glassReveal 1.2s 0.3s var(--ease) forwards;
         }
-        body.guest-mode #guest-overlay { opacity:1; pointer-events:auto; }
-        .guest-card {
-            background:var(--glass);
-            border:1px solid var(--glass-border);
-            border-radius:20px; padding:32px 40px;
-            backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
-            text-align:center; max-width:440px;
-            box-shadow:0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,175,55,0.10);
-            position:relative;
+        @keyframes glassReveal{
+            from{opacity:0;transform:translateY(16px) scale(0.98);filter:blur(4px)}
+            to{opacity:1;transform:translateY(0) scale(1.00);filter:blur(0)}
         }
-        .guest-card::before, .guest-card::after {
-            content:''; position:absolute;
-            width:28px; height:28px;
-            border-color:rgba(212,175,55,0.3); border-style:solid;
+        .hero-glass::before,.hero-glass::after{
+            content:'';position:absolute;width:36px;height:36px;
+            border-color:rgba(212,175,55,0.28);border-style:solid;
         }
-        .guest-card::before { top:14px; left:14px;    border-width:1px 0 0 1px; }
-        .guest-card::after  { bottom:14px; right:14px; border-width:0 1px 1px 0; }
-        .guest-eyebrow {
-            font-size:0.56rem; letter-spacing:0.5em; text-transform:uppercase;
-            color:rgba(251,146,60,0.80); margin-bottom:10px;
-        }
-        .guest-title {
-            font-family:'Cormorant Garamond',serif;
-            font-size:1.7rem; font-weight:300; letter-spacing:0.06em;
-            color:white; margin-bottom:10px;
-        }
-        .guest-body {
-            font-size:0.62rem; letter-spacing:0.18em; text-transform:uppercase;
-            color:rgba(255,255,255,0.30); line-height:2.2; margin-bottom:28px;
-        }
-        #reconnect-btn {
-            display:inline-flex; align-items:center; gap:10px;
-            padding:15px 44px;
-            font-family:'Montserrat',sans-serif;
-            font-size:0.66rem; font-weight:700;
-            letter-spacing:0.3em; text-transform:uppercase;
-            background:transparent; color:var(--gold);
-            border:1px solid rgba(212,175,55,0.45);
-            border-radius:50px; cursor:pointer;
-            position:relative; overflow:hidden;
-            transition:all 0.35s ease;
-        }
-        #reconnect-btn::before {
-            content:''; position:absolute; inset:0;
-            background:linear-gradient(135deg, var(--gold), #b8941f);
-            transform:scaleX(0); transform-origin:left;
-            transition:transform 0.4s var(--ease); z-index:-1;
-        }
-        #reconnect-btn:hover { color:#000; box-shadow:0 0 32px var(--gold-glow); }
-        #reconnect-btn:hover::before { transform:scaleX(1); }
-        #reconnect-btn:disabled { opacity:0.35; cursor:not-allowed; }
-        .reconnect-spinner {
-            display:none; width:13px; height:13px; border-radius:50%;
-            border:2px solid rgba(0,0,0,0.2); border-top-color:currentColor;
-            animation:spin 0.65s linear infinite;
-        }
-        #reconnect-btn.retrying .reconnect-spinner { display:block; }
-        #reconnect-btn.retrying .reconnect-text    { opacity:0.65; }
-        @keyframes spin { to { transform:rotate(360deg); } }
+        .hero-glass::before{top:16px;left:16px;border-width:1px 0 0 1px}
+        .hero-glass::after{bottom:16px;right:16px;border-width:0 1px 1px 0}
 
-        /* ── SESSION BAR ── */
-        #session-bar {
-            position:fixed; bottom:36px; left:50%;
-            transform:translateX(-50%) translateY(20px);
-            z-index:6;
-            display:flex; align-items:center; gap:20px;
-            background:var(--glass);
-            border:1px solid var(--glass-border);
-            border-radius:60px; padding:14px 28px;
-            backdrop-filter:blur(var(--blur));
-            opacity:0; pointer-events:none;
-            transition:opacity 0.7s var(--ease), transform 0.7s var(--ease);
-        }
-        body.call-active #session-bar {
-            opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto;
-        }
-        #waveform { display:flex; align-items:center; gap:3px; height:22px; }
-        #waveform span {
-            display:block; width:3px; border-radius:2px;
-            background:var(--gold); height:5px;
-        }
-        #waveform span:nth-child(1) { animation:wave 1.3s 0.00s ease-in-out infinite; }
-        #waveform span:nth-child(2) { animation:wave 1.3s 0.15s ease-in-out infinite; }
-        #waveform span:nth-child(3) { animation:wave 1.3s 0.30s ease-in-out infinite; }
-        #waveform span:nth-child(4) { animation:wave 1.3s 0.45s ease-in-out infinite; }
-        #waveform span:nth-child(5) { animation:wave 1.3s 0.60s ease-in-out infinite; }
-        @keyframes wave {
-            0%,100% { height:4px;  opacity:0.35; }
-            50%      { height:18px; opacity:1;    }
-        }
-        body.st-listening #waveform span { animation-duration:0.7s; }
-        body.st-speaking  #waveform span { animation-duration:0.45s; }
-        body.st-thinking  #waveform span { opacity:0.2 !important; height:4px !important; animation:none; }
-        #session-label {
-            font-size:0.62rem; letter-spacing:0.25em; text-transform:uppercase;
-            color:rgba(255,255,255,0.40); white-space:nowrap;
-        }
-        #end-btn {
-            padding:9px 22px;
-            font-family:'Montserrat',sans-serif;
-            font-size:0.58rem; font-weight:700;
-            letter-spacing:0.22em; text-transform:uppercase;
-            background:rgba(255,65,43,0.10); color:rgba(255,100,80,0.90);
-            border:1px solid rgba(255,65,43,0.30);
-            border-radius:30px; cursor:pointer;
-            transition:all 0.3s ease;
-        }
-        #end-btn:hover { background:rgba(255,65,43,0.22); box-shadow:0 0 18px rgba(255,65,43,0.2); }
+        .hero-eyebrow{font-size:0.58rem;letter-spacing:0.55em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;opacity:0;animation:slideUp 0.9s 0.7s var(--ease) forwards}
+        .hero-name{font-family:'Cormorant Garamond',serif;font-size:clamp(3.4rem,7vw,6.2rem);font-weight:300;line-height:0.92;letter-spacing:0.04em;color:white;margin-bottom:8px;opacity:0;animation:slideUp 0.9s 0.85s var(--ease) forwards}
+        .hero-name em{font-style:italic;color:var(--gold)}
+        .hero-tm{font-size:0.55rem;letter-spacing:0.4em;text-transform:uppercase;color:rgba(212,175,55,0.45);margin-bottom:32px;opacity:0;animation:slideUp 0.9s 1.0s var(--ease) forwards}
+        .hero-divider{width:48px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:0 auto 28px;opacity:0;animation:slideUp 0.9s 1.1s var(--ease) forwards}
+        .hero-sub{font-size:0.62rem;letter-spacing:0.32em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-bottom:44px;opacity:0;animation:slideUp 0.9s 1.2s var(--ease) forwards}
 
-        /* ── THE PASS (QR) ── */
-        #the-pass {
-            position:fixed; bottom:48px; right:52px;
-            z-index:10;
-            display:flex; flex-direction:column; align-items:flex-end; gap:12px;
-            transform:translateY(120%) translateX(20px);
-            opacity:0; pointer-events:none;
-            transition:transform 1s var(--ease), opacity 0.8s var(--ease);
-        }
-        #the-pass.open { transform:translateY(0) translateX(0); opacity:1; pointer-events:auto; }
-        .pass-label {
-            font-size:0.58rem; letter-spacing:0.35em; text-transform:uppercase;
-            color:rgba(212,175,55,0.60); text-align:right;
-        }
-        .pass-card {
-            background:rgba(255,255,255,0.96);
-            border-radius:18px; padding:20px 22px; text-align:center;
-            box-shadow:0 28px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(212,175,55,0.35),
-                       0 0 40px rgba(212,175,55,0.10);
-            animation:passReveal 0.9s var(--ease) both;
-        }
-        @keyframes passReveal {
-            from { transform:scale(0.90) rotate(-1.5deg); filter:blur(4px); opacity:0; }
-            to   { transform:scale(1)    rotate(0deg);    filter:blur(0);   opacity:1; }
-        }
-        .pass-card h3 {
-            font-family:'Cormorant Garamond',serif;
-            font-size:1.15rem; font-weight:600; color:#111;
-            margin-bottom:14px; letter-spacing:0.04em;
-        }
-        .pass-card img { display:block; border-radius:8px; }
-        .pass-card-sub { font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:#555; margin-top:12px; }
-        .pass-dismiss {
-            font-size:0.56rem; letter-spacing:0.3em; text-transform:uppercase;
-            color:rgba(255,255,255,0.25); background:none; border:none;
-            cursor:pointer; padding:4px 0; transition:color 0.3s ease;
-        }
-        .pass-dismiss:hover { color:rgba(255,255,255,0.60); }
+        #touch-hint{display:flex;align-items:center;justify-content:center;gap:16px;opacity:0;animation:slideUp 0.9s 1.4s var(--ease) forwards}
+        body.guest-mode #touch-hint, body.bridge-reconnecting #touch-hint{display:none}
+        .hint-ring{width:52px;height:52px;border-radius:50%;border:1px solid rgba(212,175,55,0.45);display:flex;align-items:center;justify-content:center;animation:ringPulse 2.6s var(--ease-s) infinite}
+        .hint-ring-inner{width:32px;height:32px;border-radius:50%;background:var(--gold-dim);border:1px solid rgba(212,175,55,0.55)}
+        @keyframes ringPulse{0%,100%{box-shadow:0 0 0 0 var(--gold-glow)}50%{box-shadow:0 0 0 14px rgba(212,175,55,0)}}
+        .hint-text{font-size:0.62rem;letter-spacing:0.32em;text-transform:uppercase;color:rgba(255,255,255,0.35)}
+        @keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 
-        /* ── TAP ZONE ── */
-        #tap-zone { position:fixed; inset:0; z-index:4; cursor:pointer; }
-        body.call-active         #tap-zone { pointer-events:none; }
-        body.guest-mode          #tap-zone { pointer-events:none; }
-        body.bridge-reconnecting #tap-zone { pointer-events:none; }
+        /* Guest overlay */
+        #guest-overlay{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.8s var(--ease)}
+        body.guest-mode #guest-overlay{opacity:1;pointer-events:auto}
+        .guest-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:40px 52px;backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));text-align:center;max-width:440px;box-shadow:0 24px 70px rgba(0,0,0,0.55),inset 0 1px 0 rgba(212,175,55,0.10);position:relative}
+        .guest-card::before,.guest-card::after{content:'';position:absolute;width:28px;height:28px;border-color:rgba(212,175,55,0.28);border-style:solid}
+        .guest-card::before{top:14px;left:14px;border-width:1px 0 0 1px}
+        .guest-card::after{bottom:14px;right:14px;border-width:0 1px 1px 0}
+        .guest-eyebrow{font-size:0.56rem;letter-spacing:0.5em;text-transform:uppercase;color:rgba(251,146,60,0.80);margin-bottom:10px}
+        .guest-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;letter-spacing:0.06em;color:white;margin-bottom:12px}
+        .guest-body{font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.28);line-height:2.2;margin-bottom:32px}
+        #reconnect-btn{display:inline-flex;align-items:center;gap:10px;padding:15px 44px;font-family:'Montserrat',sans-serif;font-size:0.66rem;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;background:transparent;color:var(--gold);border:1px solid rgba(212,175,55,0.45);border-radius:50px;cursor:pointer;position:relative;overflow:hidden;transition:all 0.35s ease}
+        #reconnect-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--gold),#b8941f);transform:scaleX(0);transform-origin:left;transition:transform 0.4s var(--ease);z-index:-1}
+        #reconnect-btn:hover{color:#000;box-shadow:0 0 32px var(--gold-glow)}
+        #reconnect-btn:hover::before{transform:scaleX(1)}
+        #reconnect-btn:disabled{opacity:0.35;cursor:not-allowed}
+        .reconnect-spinner{display:none;width:13px;height:13px;border-radius:50%;border:2px solid rgba(0,0,0,0.2);border-top-color:currentColor;animation:spin 0.65s linear infinite}
+        #reconnect-btn.retrying .reconnect-spinner{display:block}
+        #reconnect-btn.retrying .reconnect-text{opacity:0.65}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* Session bar */
+        #session-bar{position:fixed;bottom:36px;left:50%;transform:translateX(-50%) translateY(20px);z-index:6;display:flex;align-items:center;gap:20px;background:var(--glass);border:1px solid var(--glass-border);border-radius:60px;padding:14px 28px;backdrop-filter:blur(var(--blur));opacity:0;pointer-events:none;transition:opacity 0.7s var(--ease),transform 0.7s var(--ease)}
+        body.call-active #session-bar{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+        #waveform{display:flex;align-items:center;gap:3px;height:22px}
+        #waveform span{display:block;width:3px;border-radius:2px;background:var(--gold);height:5px}
+        #waveform span:nth-child(1){animation:wave 1.3s 0.00s ease-in-out infinite}
+        #waveform span:nth-child(2){animation:wave 1.3s 0.15s ease-in-out infinite}
+        #waveform span:nth-child(3){animation:wave 1.3s 0.30s ease-in-out infinite}
+        #waveform span:nth-child(4){animation:wave 1.3s 0.45s ease-in-out infinite}
+        #waveform span:nth-child(5){animation:wave 1.3s 0.60s ease-in-out infinite}
+        @keyframes wave{0%,100%{height:4px;opacity:0.35}50%{height:18px;opacity:1}}
+        body.st-listening #waveform span{animation-duration:0.7s}
+        body.st-speaking #waveform span{animation-duration:0.45s}
+        body.st-thinking #waveform span{opacity:0.2 !important;height:4px !important;animation:none}
+        #session-label{font-size:0.62rem;letter-spacing:0.25em;text-transform:uppercase;color:rgba(255,255,255,0.40);white-space:nowrap}
+        #end-btn{padding:9px 22px;font-family:'Montserrat',sans-serif;font-size:0.58rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;background:rgba(255,65,43,0.10);color:rgba(255,100,80,0.90);border:1px solid rgba(255,65,43,0.30);border-radius:30px;cursor:pointer;transition:all 0.3s ease}
+        #end-btn:hover{background:rgba(255,65,43,0.22);box-shadow:0 0 18px rgba(255,65,43,0.2)}
+
+        /* The Pass (QR) */
+        #the-pass{position:fixed;bottom:48px;right:52px;z-index:10;display:flex;flex-direction:column;align-items:flex-end;gap:12px;transform:translateY(120%) translateX(20px);opacity:0;pointer-events:none;transition:transform 1s var(--ease),opacity 0.8s var(--ease)}
+        #the-pass.open{transform:translateY(0) translateX(0);opacity:1;pointer-events:auto}
+        .pass-label{font-size:0.58rem;letter-spacing:0.35em;text-transform:uppercase;color:rgba(212,175,55,0.60);text-align:right}
+        .pass-card{background:rgba(255,255,255,0.96);border-radius:18px;padding:20px 22px;text-align:center;box-shadow:0 28px 80px rgba(0,0,0,0.55),0 0 0 1px rgba(212,175,55,0.35),0 0 40px rgba(212,175,55,0.10);animation:passReveal 0.9s var(--ease) both}
+        @keyframes passReveal{from{transform:scale(0.90) rotate(-1.5deg);filter:blur(4px);opacity:0}to{transform:scale(1) rotate(0deg);filter:blur(0);opacity:1}}
+        .pass-card h3{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;color:#111;margin-bottom:14px;letter-spacing:0.04em}
+        .pass-card img{display:block;border-radius:8px}
+        .pass-card-sub{font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:#555;margin-top:12px}
+        .pass-dismiss{font-size:0.56rem;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.25);background:none;border:none;cursor:pointer;padding:4px 0;transition:color 0.3s ease}
+        .pass-dismiss:hover{color:rgba(255,255,255,0.60)}
+
+        #tap-zone{position:fixed;inset:0;z-index:4;cursor:pointer}
+        body.call-active #tap-zone, body.guest-mode #tap-zone, body.bridge-reconnecting #tap-zone{pointer-events:none}
     </style>
 </head>
 <body>
 
     <!--
-        AGENT VIDEO — ready for agent-idle.mp4
-        Drop your file in the GitHub repo root.
-        onerror hides the element if file is missing.
+        VIDEO BACKGROUND (self-hosted, just like vapi.js)
+        ─────────────────────────────────────────────────
+        1. Go to https://mixkit.co/free-stock-video/dubai/
+        2. Download any clip you like (recommended: the aerial
+           sunset or city lights clip) — Free Download, 1080p
+        3. Rename to: dubai-bg.mp4
+        4. git add dubai-bg.mp4 && git commit -m "bg video" && git push
+
+        The CSS gradient behind this element is always visible.
+        No blank screen while the file loads or if it's missing.
     -->
-    <video
-        id="agent-video"
-        src="agent-idle.mp4"
-        autoplay loop muted playsinline preload="auto"
-        onerror="this.style.display='none'"
-    ></video>
+    <video id="bg-video" src="dubai-bg.mp4" autoplay loop muted playsinline preload="auto" onerror="this.style.display='none'"></video>
 
     <div id="vignette"></div>
     <div id="vibe-tint"></div>
@@ -421,13 +232,18 @@
         <span id="ai-label">Loading...</span>
     </div>
 
-    <div id="idle-hero">
-        <p class="hero-eyebrow">Dubai's Premier AI Concierge</p>
-        <h1 class="hero-title">Your Personal<br><em>Travel Expert</em></h1>
-        <p class="hero-sub">Powered by Artificial Intelligence</p>
-        <div id="touch-hint">
-            <div class="hint-ring"><div class="hint-ring-inner"></div></div>
-            <span class="hint-text">Touch Anywhere to Begin</span>
+    <!-- CENTERED GLASSMORPHISM HERO BRANDING -->
+    <div id="hero-center">
+        <div class="hero-glass">
+            <p class="hero-eyebrow">Dubai's Premier AI Concierge</p>
+            <h1 class="hero-name">The <em>Travel</em><br>Expert</h1>
+            <p class="hero-tm">Travel Expert ™ &nbsp;|&nbsp; The AI Concierge</p>
+            <div class="hero-divider"></div>
+            <p class="hero-sub">Luxury Travel &nbsp;·&nbsp; Storytelling &nbsp;·&nbsp; AI&#8209;Optimized Experiences</p>
+            <div id="touch-hint">
+                <div class="hint-ring"><div class="hint-ring-inner"></div></div>
+                <span class="hint-text">Touch Anywhere to Begin</span>
+            </div>
         </div>
     </div>
 
@@ -435,22 +251,13 @@
         <div class="guest-card">
             <p class="guest-eyebrow">Guest Mode Active</p>
             <h2 class="guest-title">Voice Unavailable</h2>
-            <p class="guest-body">
-                The voice engine could not be loaded.<br>
-                Network or firewall restriction detected.<br>
-                Please ask a team member for assistance.
-            </p>
-            <button id="reconnect-btn">
-                <div class="reconnect-spinner"></div>
-                <span class="reconnect-text">Manual Reconnect</span>
-            </button>
+            <p class="guest-body">The voice engine could not be loaded.<br>Network or firewall restriction detected.<br>Please ask a team member for assistance.</p>
+            <button id="reconnect-btn"><div class="reconnect-spinner"></div><span class="reconnect-text">Manual Reconnect</span></button>
         </div>
     </div>
 
     <div id="session-bar">
-        <div id="waveform">
-            <span></span><span></span><span></span><span></span><span></span>
-        </div>
+        <div id="waveform"><span></span><span></span><span></span><span></span><span></span></div>
         <span id="session-label">Connecting...</span>
         <button id="end-btn">End Session</button>
     </div>
@@ -462,7 +269,7 @@
             <img id="pass-qr-img" src="" alt="Scan to Book" width="220" height="220">
             <p class="pass-card-sub">Scan with your phone to book</p>
         </div>
-        <button class="pass-dismiss" id="pass-dismiss">Dismiss ✕</button>
+        <button class="pass-dismiss" id="pass-dismiss">Dismiss &times;</button>
     </div>
 
     <div id="tap-zone"></div>
@@ -472,7 +279,7 @@
         const VAPI_PUBLIC_KEY   = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
         const ASSISTANT_ID      = "fcb09257-e877-494d-a7c9-d3a152da0059";
 
-        const agentVideo   = document.getElementById('agent-video');
+        const bgVideo      = document.getElementById('bg-video');
         const tapZone      = document.getElementById('tap-zone');
         const sessionLabel = document.getElementById('session-label');
         const endBtn       = document.getElementById('end-btn');
@@ -484,13 +291,11 @@
         const aiLabel      = document.getElementById('ai-label');
         const reconnectBtn = document.getElementById('reconnect-btn');
 
-        /* ── Video state ── */
         function setVideoState(s) {
-            agentVideo.classList.remove('v-listening','v-speaking','v-thinking','v-guest','v-reconnecting');
-            if (s !== 'idle') agentVideo.classList.add(`v-${s}`);
+            bgVideo.classList.remove('v-listening','v-speaking','v-thinking','v-guest','v-reconnecting');
+            if (s !== 'idle') bgVideo.classList.add('v-' + s);
         }
 
-        /* ── AI state machine ── */
         const HUD_MAP = {
             idle:         { cls:'s-idle',         lbl:'System Online'             },
             listening:    { cls:'s-listening',    lbl:'Listening...'              },
@@ -502,68 +307,34 @@
         };
         function setAIState(key) {
             const s = HUD_MAP[key] || HUD_MAP.idle;
-            aiHud.className     = s.cls;
-            aiLabel.textContent = s.lbl;
+            aiHud.className = s.cls; aiLabel.textContent = s.lbl;
             document.body.classList.remove('st-listening','st-speaking','st-thinking');
             if (key === 'listening') document.body.classList.add('st-listening');
             if (key === 'speaking')  document.body.classList.add('st-speaking');
             if (key === 'thinking')  document.body.classList.add('st-thinking');
-            const bar = { listening:'Listening to You...', thinking:'Thinking...',
-                          speaking:'Your Agent is Speaking', executing:'Preparing Your Info...', idle:'Connected' };
+            var bar = { listening:'Listening to You...', thinking:'Thinking...',
+                        speaking:'Your Agent is Speaking', executing:'Preparing Your Info...', idle:'Connected' };
             if (bar[key]) sessionLabel.textContent = bar[key];
-            const vid = { listening:'listening', speaking:'speaking', thinking:'thinking',
-                          executing:'thinking', reconnecting:'reconnecting', guest:'guest' };
+            var vid = { listening:'listening', speaking:'speaking', thinking:'thinking',
+                        executing:'thinking', reconnecting:'reconnecting', guest:'guest' };
             setVideoState(vid[key] || 'idle');
         }
 
-        /* ── Vibe ── */
         function setVibe(v) {
             document.body.classList.remove('vibe-rain','vibe-luxury','vibe-adventure');
-            if (v) document.body.classList.add(`vibe-${v}`);
+            if (v) document.body.classList.add('vibe-' + v);
         }
 
-        /* ── The Pass ── */
         function openPass(name, url) {
             passTourName.textContent = name || 'Your Experience';
-            passQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
-            thePass.classList.add('open');
-            document.body.classList.add('pass-open');
+            passQrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
+            thePass.classList.add('open'); document.body.classList.add('pass-open');
         }
         function closePass() { thePass.classList.remove('open'); document.body.classList.remove('pass-open'); }
         passDismiss.addEventListener('click', closePass);
 
-        /* ══════════════════════════════════════════
-           STICKY SOCKET PROTOCOL ™
-
-           transports: ['polling', 'websocket']
-             POLLING FIRST. Critical decision for hotel/4G networks.
-             WebSocket requires a clean HTTP Upgrade handshake.
-             Captive portals, corporate proxies, and mobile networks
-             silently drop or corrupt the Upgrade header — the socket
-             hangs, logs "transport close", then gives up.
-             Polling over plain HTTPS always works because it is just
-             a normal HTTP request. Socket.io upgrades to WebSocket
-             automatically in the background once polling is stable.
-
-           rememberUpgrade: true
-             After a successful WebSocket upgrade, this caches it.
-             The next reconnect starts with WebSocket instead of
-             going through polling again. Best of both worlds.
-
-           timeout: 20000
-             20 seconds. Default is 5. Congested 4G networks take
-             longer to complete the handshake. 5s causes false
-             timeouts that look like "transport close" in Render logs.
-
-           reconnectionAttempts: Infinity
-             Never surrender. The network will come back.
-
-           rejectUnauthorized: false
-             Hotel/corporate SSL proxies often intercept HTTPS with
-             a self-signed cert. This lets the socket connect through
-             those proxies instead of throwing a certificate error.
-        ══════════════════════════════════════════ */
-        const socket = io(RENDER_BRIDGE_URL, {
+        /* STICKY SOCKET PROTOCOL */
+        var socket = io(RENDER_BRIDGE_URL, {
             transports:           ['polling', 'websocket'],
             rememberUpgrade:      true,
             timeout:              20000,
@@ -574,116 +345,87 @@
             rejectUnauthorized:   false,
         });
 
-        let reconnectFlashTimer = null;
-
-        socket.on('connect', () => {
+        var flashTimer = null;
+        socket.on('connect', function() {
             document.body.classList.remove('bridge-reconnecting');
-            if (!document.body.classList.contains('guest-mode') &&
-                !document.body.classList.contains('call-active')) {
+            if (!document.body.classList.contains('guest-mode') && !document.body.classList.contains('call-active')) {
                 setAIState('idle');
-                // Brief green flash on HUD border — confirms reconnect visually
                 aiHud.style.borderColor = 'rgba(74,222,128,0.5)';
                 aiHud.style.boxShadow   = '0 0 18px rgba(74,222,128,0.15)';
-                clearTimeout(reconnectFlashTimer);
-                reconnectFlashTimer = setTimeout(() => {
-                    aiHud.style.borderColor = '';
-                    aiHud.style.boxShadow   = '';
-                }, 1800);
+                clearTimeout(flashTimer);
+                flashTimer = setTimeout(function() { aiHud.style.borderColor = ''; aiHud.style.boxShadow = ''; }, 1800);
             }
-            console.log(`✅ Socket connected | ID: ${socket.id} | Transport: ${socket.io.engine.transport.name}`);
+            console.log('Socket OK | ID:', socket.id, '| Transport:', socket.io.engine.transport.name);
         });
-
-        socket.on('disconnect', (reason) => {
+        socket.on('disconnect', function(r) {
             document.body.classList.add('bridge-reconnecting');
             if (!document.body.classList.contains('call-active')) setAIState('reconnecting');
-            console.warn(`🔌 Disconnected: ${reason}`);
         });
-
-        socket.on('connect_error', (err) => {
+        socket.on('connect_error', function(err) {
             document.body.classList.add('bridge-reconnecting');
             if (!document.body.classList.contains('call-active')) setAIState('reconnecting');
-            console.error(`❌ Connection error: ${err.message}`);
         });
-
-        socket.on('AI_STATE_UPDATE', ({ state }) => {
+        socket.on('AI_STATE_UPDATE', function(data) {
             if (document.body.classList.contains('guest-mode')) return;
-            const map = { LISTENING:'listening', THINKING:'thinking', SPEAKING:'speaking', EXECUTING:'executing', IDLE:'idle' };
-            setAIState(map[state] || 'idle');
+            var m = { LISTENING:'listening', THINKING:'thinking', SPEAKING:'speaking', EXECUTING:'executing', IDLE:'idle' };
+            setAIState(m[data.state] || 'idle');
         });
-
-        socket.on('COMMAND_UPDATE_UI', ({ viewType, tourName, qrUrl, vibe }) => {
-            setVibe(vibe);
+        socket.on('COMMAND_UPDATE_UI', function(data) {
+            setVibe(data.vibe);
             if (!document.body.classList.contains('guest-mode')) setAIState('executing');
-            const delay = vibe === 'luxury' ? 1800 : 600;
-            if (viewType === 'tour_details' || viewType === 'booking_qr') {
-                setTimeout(() => { openPass(tourName, qrUrl); setAIState('idle'); }, delay);
-            } else {
-                setTimeout(() => setAIState('idle'), delay);
-            }
+            var delay = data.vibe === 'luxury' ? 1800 : 600;
+            if (data.viewType === 'tour_details' || data.viewType === 'booking_qr') {
+                setTimeout(function() { openPass(data.tourName, data.qrUrl); setAIState('idle'); }, delay);
+            } else { setTimeout(function() { setAIState('idle'); }, delay); }
         });
 
-        /* ── Guest Mode ── */
         function activateGuestMode() {
-            console.warn('⚠ vapi.js missing or broken — Guest Mode active.');
             document.body.classList.add('guest-mode');
             tapZone.style.pointerEvents = 'none';
             setAIState('guest');
         }
-        reconnectBtn.addEventListener('click', () => {
-            reconnectBtn.disabled = true;
-            reconnectBtn.classList.add('retrying');
-            setTimeout(() => window.location.reload(), 500);
+        reconnectBtn.addEventListener('click', function() {
+            reconnectBtn.disabled = true; reconnectBtn.classList.add('retrying');
+            setTimeout(function() { window.location.reload(); }, 500);
         });
 
-        /* ── Vapi Bootstrap ──
-           vapi.js is a synchronous blocking script tag.
-           By this point window.Vapi is defined or it is not.
-           No dynamic loading needed. Simple. */
         function bootVapi() {
             if (typeof Vapi === 'undefined') { activateGuestMode(); return; }
-
-            console.log('✅ Vapi confirmed (self-hosted) | ASSISTANT_ID:', ASSISTANT_ID);
-            const vapi = new Vapi(VAPI_PUBLIC_KEY);
+            var vapi = new Vapi(VAPI_PUBLIC_KEY);
             tapZone.style.pointerEvents = 'auto';
             if (!document.body.classList.contains('bridge-reconnecting')) setAIState('idle');
 
-            tapZone.addEventListener('click', () => {
+            tapZone.addEventListener('click', function() {
                 if (document.body.classList.contains('call-active')) return;
                 if (document.body.classList.contains('bridge-reconnecting')) return;
                 vapi.start(ASSISTANT_ID);
                 document.body.classList.add('call-active');
-                sessionLabel.textContent = 'Connecting...';
-                setAIState('thinking');
+                sessionLabel.textContent = 'Connecting...'; setAIState('thinking');
             });
+            endBtn.addEventListener('click', function() { vapi.stop(); });
 
-            endBtn.addEventListener('click', () => vapi.stop());
-
-            vapi.on('speech-start', () => setAIState('listening'));
-            vapi.on('speech-end',   () => setAIState('thinking'));
-            vapi.on('message', (msg) => {
+            vapi.on('speech-start', function() { setAIState('listening'); });
+            vapi.on('speech-end',   function() { setAIState('thinking'); });
+            vapi.on('message', function(msg) {
                 if (msg.type === 'speech-update') {
                     if (msg.role === 'assistant' && msg.status === 'started') setAIState('speaking');
                     if (msg.role === 'assistant' && msg.status === 'stopped')  setAIState('idle');
                 }
             });
-            vapi.on('call-start', () => { sessionLabel.textContent = 'Connected'; setAIState('idle'); });
-            vapi.on('call-end',   () => {
+            vapi.on('call-start', function() { sessionLabel.textContent = 'Connected'; setAIState('idle'); });
+            vapi.on('call-end',   function() {
                 document.body.classList.remove('call-active');
                 setVibe(null); closePass(); setAIState('idle'); setVideoState('idle');
                 tapZone.style.pointerEvents = 'auto';
             });
-            vapi.on('error', (err) => {
-                console.error('❌ Vapi error:', err);
-                document.body.classList.remove('call-active');
-                setAIState('idle');
+            vapi.on('error', function(err) {
+                document.body.classList.remove('call-active'); setAIState('idle');
             });
         }
 
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', bootVapi);
-        } else {
-            bootVapi();
-        }
+        } else { bootVapi(); }
     </script>
 </body>
 </html>
