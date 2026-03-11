@@ -10,8 +10,8 @@
         If this also gets blocked on the target network, host it
         locally too (copy socket.io.min.js to your GitHub repo).
     -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.5.2/dist/vapi.min.js"></script>
+    
     <!--
         VAPI — SELF-HOSTED.
         No jsdelivr. No unpkg. No external CDN.
@@ -529,31 +529,61 @@
     <div id="offline-banner">⚠ Bridge offline — reconnecting…</div>
 
     <script>
-     // 1. Wait for the DOM (Fixes "tapZone is not defined")
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // Select the elements AFTER they are loaded
-    const tapZone = document.getElementById('tap-zone');
-    const VAPI_PUBLIC_KEY = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
-    const ASSISTANT_ID = "fcb09257-e877-494d-a7c9-d3a152da0059";
-    let vapiInstance = null;
+     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Configuration
+            const VAPI_PUBLIC_KEY = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
+            const ASSISTANT_ID = "fcb09257-e877-494d-a7c9-d3a152da0059";
+            
+            // Elements
+            const tapZone = document.getElementById('tap-zone');
+            const aiLabel = document.getElementById('ai-label');
+            const aiHud = document.getElementById('ai-hud');
+            let vapiInstance = null;
 
-    // 2. Logic for the Tap Zone
-    tapZone.addEventListener('click', () => {
-        console.log("👆 Click detected.");
+            // Update UI to show we are ready
+            if (typeof Vapi !== 'undefined') {
+                aiLabel.innerText = "System Online";
+                aiHud.classList.remove('s-offline');
+                aiHud.classList.add('s-idle');
+            } else {
+                aiLabel.innerText = "Offline Mode";
+                aiHud.classList.add('s-offline');
+            }
 
-        // Check for Vapi (Fixes "exports is not defined" crash impact)
-        if (typeof Vapi === 'undefined') {
-            alert("Vapi Library Error: Check console for 'exports' error.");
-            return;
-        }
+            tapZone.addEventListener('click', () => {
+                console.log("👆 Initialization sequence started...");
 
-        if (!vapiInstance) {
-            vapiInstance = new Vapi(VAPI_PUBLIC_KEY);
-        }
+                if (typeof Vapi === 'undefined') {
+                    alert("Logic Error: Vapi library not detected. Check internet connection.");
+                    return;
+                }
 
-        vapiInstance.start(ASSISTANT_ID);
-    });
+                if (!vapiInstance) {
+                    vapiInstance = new Vapi(VAPI_PUBLIC_KEY);
+                    
+                    // Basic Event Listeners for UI feedback
+                    vapiInstance.on('call-start', () => {
+                        document.body.classList.add('call-active');
+                        aiLabel.innerText = "Speaking...";
+                        aiHud.className = "s-speaking";
+                    });
+
+                    vapiInstance.on('call-end', () => {
+                        document.body.classList.remove('call-active');
+                        aiLabel.innerText = "System Online";
+                        aiHud.className = "s-idle";
+                    });
+                }
+
+                vapiInstance.start(ASSISTANT_ID);
+            });
+
+            // End Session Button logic
+            document.getElementById('end-btn').addEventListener('click', () => {
+                if (vapiInstance) vapiInstance.stop();
+            });
+        });
     </script>
 </body>
 </html>
