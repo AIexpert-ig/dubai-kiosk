@@ -7,14 +7,6 @@
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
-    <!--
-        VAPI — SELF-HOSTED ONLY.
-        No CDN. Copy from node_modules to your GitHub repo root:
-          npm install @vapi-ai/web
-          cp node_modules/@vapi-ai/web/dist/vapi.browser.js ./vapi.js
-          git add vapi.js && git commit -m "self-host vapi" && git push
-    -->
-    <script src="vapi.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@200;300;400;700&display=swap" rel="stylesheet">
@@ -567,6 +559,8 @@
         <span>Luxury Travel · Storytelling · AI-Optimized Experiences ™</span>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.5.2/dist/vapi.min.js"></script>
+
     <script>
         const RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
         const VAPI_PUBLIC_KEY   = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
@@ -701,48 +695,54 @@
             setTimeout(() => window.location.reload(), 500);
         });
 
-        /* ── Vapi Bootstrap ──
-           vapi.js is a synchronous blocking script tag loaded in <head>.
-           By this point window.Vapi is defined or it is not. */
+        /* ── Vapi Bootstrap ── */
         function bootVapi() {
-            if (typeof Vapi === 'undefined') { activateGuestMode(); return; }
-
-            console.log('✅ Vapi self-hosted confirmed | ASSISTANT_ID:', ASSISTANT_ID);
-            const vapi = new Vapi(VAPI_PUBLIC_KEY);
-
-            tapZone.style.pointerEvents = 'auto';
-            if (!document.body.classList.contains('bridge-reconnecting')) setAIState('idle');
-
-            tapZone.addEventListener('click', () => {
-                if (document.body.classList.contains('call-active')) return;
-                if (document.body.classList.contains('bridge-reconnecting')) return;
-                vapi.start(ASSISTANT_ID);
-                document.body.classList.add('call-active');
-                sessionLabel.textContent = 'Connecting...';
-                setAIState('thinking');
-            });
-
-            endBtn.addEventListener('click', () => vapi.stop());
-
-            vapi.on('speech-start', () => setAIState('listening'));
-            vapi.on('speech-end',   () => setAIState('thinking'));
-            vapi.on('message', (msg) => {
-                if (msg.type === 'speech-update') {
-                    if (msg.role === 'assistant' && msg.status === 'started') setAIState('speaking');
-                    if (msg.role === 'assistant' && msg.status === 'stopped')  setAIState('idle');
-                }
-            });
-            vapi.on('call-start', () => { sessionLabel.textContent = 'Connected'; setAIState('idle'); });
-            vapi.on('call-end',   () => {
-                document.body.classList.remove('call-active');
-                setVibe(null); closePass(); setAIState('idle');
+            if (typeof window.Vapi !== 'undefined') {
+                document.body.classList.remove('guest-mode');
+                aiLabel.textContent = 'System Online';
+                
+                console.log('✅ Vapi CDN confirmed | ASSISTANT_ID:', ASSISTANT_ID);
+                const vapiInstance = new window.Vapi(VAPI_PUBLIC_KEY);
+                
                 tapZone.style.pointerEvents = 'auto';
-            });
-            vapi.on('error', (err) => {
-                console.error('❌ Vapi error:', err);
-                document.body.classList.remove('call-active');
-                setAIState('idle');
-            });
+                if (!document.body.classList.contains('bridge-reconnecting')) setAIState('idle');
+
+                tapZone.addEventListener('click', () => {
+                    if (document.body.classList.contains('call-active')) return;
+                    if (document.body.classList.contains('bridge-reconnecting')) return;
+                    vapiInstance.start(ASSISTANT_ID);
+                    sessionLabel.textContent = 'Connecting...';
+                    setAIState('thinking');
+                });
+
+                endBtn.addEventListener('click', () => vapiInstance.stop());
+
+                vapiInstance.on('speech-start', () => setAIState('listening'));
+                vapiInstance.on('speech-end',   () => setAIState('thinking'));
+                vapiInstance.on('message', (msg) => {
+                    if (msg.type === 'speech-update') {
+                        if (msg.role === 'assistant' && msg.status === 'started') setAIState('speaking');
+                        if (msg.role === 'assistant' && msg.status === 'stopped')  setAIState('idle');
+                    }
+                });
+                vapiInstance.on('call-start', () => { 
+                    document.body.classList.add('call-active');
+                    sessionLabel.textContent = 'Connected'; 
+                    setAIState('idle'); 
+                });
+                vapiInstance.on('call-end',   () => {
+                    document.body.classList.remove('call-active');
+                    setVibe(null); closePass(); setAIState('idle');
+                    tapZone.style.pointerEvents = 'auto';
+                });
+                vapiInstance.on('error', (err) => {
+                    console.error('❌ Vapi error:', err);
+                    document.body.classList.remove('call-active');
+                    setAIState('idle');
+                });
+            } else {
+                activateGuestMode();
+            }
         }
 
         if (document.readyState === 'loading') {
