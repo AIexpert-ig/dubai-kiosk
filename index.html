@@ -60,80 +60,32 @@
 
     <script>
 
-        // --- 1. CONFIGURATION ---
+        // --- LISTEN FOR VIBE CHANGES ---
+socket.on("COMMAND_UPDATE_UI", (data) => {
+    console.log("UI Update Received:", data);
+    const body = document.body;
+    const screen = document.getElementById('content');
 
-        const RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
+    // CHANGE THE VIBE (Background Colors)
+    if (data.vibe === "rain") {
+        body.style.background = "linear-gradient(180deg, #001f3f, #000000)"; // Deep Rain Blue
+    } else if (data.vibe === "luxury") {
+        body.style.background = "linear-gradient(180deg, #1a1a1a, #4d3d0d)"; // Luxury Gold Glow
+    } else if (data.vibe === "adventure") {
+        body.style.background = "linear-gradient(180deg, #000000, #ff4b2b)"; // Adventure Red
+    }
 
-        const 3bfe6c30-430a-4ee2-b584-7044d5adab0a = "YOUR_PUBLIC_KEY_HERE"; // PASTE YOUR KEY HERE
-
-        const fcb09257-e877-494d-a7c9-d3a152da0059 = "fcb09257-xxxx-xxxx"; // PASTE YOUR ASSISTANT ID HERE
-
-
-
-        // --- 2. CONNECT TO RENDER BRIDGE (To Update Screen) ---
-
-        const socket = io(RENDER_BRIDGE_URL);
-
-        const screen = document.getElementById('content');
-
-
-
-        socket.on("COMMAND_UPDATE_UI", (data) => {
-
-            console.log("UI Update Received:", data);
-
-            if(data.viewType === "tour_details" || data.viewType === "booking_qr") {
-
-                screen.innerHTML = `
-
-                    <div class="qr-card">
-
-                        <h2 style="margin-top:0;">${data.tourName}</h2>
-
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${data.qrUrl}" alt="QR Code">
-
-                        <p><b>Scan with phone to book</b></p>
-
-                    </div>
-
-                `;
-
-            }
-
-        });
-
-
-
-        // --- 3. VAPI VOICE LOGIC ---
-
-        const vapi = new Vapi(3bfe6c30-430a-4ee2-b584-7044d5adab0a);
-
-        const btn = document.getElementById('vapi-btn');
-
-
-
-        btn.addEventListener('click', () => {
-
-            vapi.start(fcb09257-e877-494d-a7c9-d3a152da0059);
-
-            btn.innerText = "Listening...";
-
-            btn.style.background = "#ff4b2b";
-
-        });
-
-
-
-        vapi.on('call-start', () => console.log('Call started'));
-
-        vapi.on('call-end', () => {
-
-            btn.innerText = "Talk to Concierge";
-
-            btn.style.background = "var(--gold)";
-
-        });
-
+    // UPDATE CONTENT
+    if(data.viewType === "tour_details" || data.viewType === "booking_qr") {
+        screen.innerHTML = `
+            <div class="qr-card">
+                <h2 style="margin-top:0;">${data.tourName}</h2>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${data.qrUrl}" alt="QR Code">
+                <p><b>Scan with phone to book</b></p>
+            </div>
+        `;
+    }
+});
     </script>
 
 </body>
