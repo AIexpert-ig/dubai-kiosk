@@ -529,76 +529,31 @@
     <div id="offline-banner">⚠ Bridge offline — reconnecting…</div>
 
     <script>
-        /* ══════════════════════════════════════════
-   CREDENTIALS & INSTANCE
-   ══════════════════════════════════════════ */
-const RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
-const VAPI_PUBLIC_KEY   = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
-const ASSISTANT_ID      = "fcb09257-e877-494d-a7c9-d3a152da0059";
+     // 1. Wait for the DOM (Fixes "tapZone is not defined")
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // Select the elements AFTER they are loaded
+    const tapZone = document.getElementById('tap-zone');
+    const VAPI_PUBLIC_KEY = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
+    const ASSISTANT_ID = "fcb09257-e877-494d-a7c9-d3a152da0059";
+    let vapiInstance = null;
 
-let vapiInstance = null;
+    // 2. Logic for the Tap Zone
+    tapZone.addEventListener('click', () => {
+        console.log("👆 Click detected.");
 
-// This function now handles the instance correctly
-function bootVapi() {
-    // Check if the module attached itself to window (common in browser builds)
-    // or if we need to wait for it.
-    if (typeof Vapi !== 'undefined') {
-        vapiInstance = new Vapi(VAPI_PUBLIC_KEY);
-        setupVapiListeners();
-        setAIState('idle');
-        console.log("✅ Vapi Instance Created");
-    } else {
-        // If it's still undefined, the vapi.js file is likely the wrong build (Node vs Browser)
-        activateGuestMode();
-    }
-}
-
-// Separate the listeners so we don't crash if Vapi is missing
-function setupVapiListeners() {
-    if(!vapiInstance) return;
-
-    vapiInstance.on('call-start', () => {
-        document.body.classList.add('call-active');
-        setAIState('idle');
-    });
-
-    vapiInstance.on('call-end', () => {
-        document.body.classList.remove('call-active');
-        setAIState('idle');
-    });
-
-    vapiInstance.on('speech-start', () => setAIState('speaking'));
-    vapiInstance.on('speech-end',   () => setAIState('listening'));
-}
-
-/* ══════════════════════════════════════════
-   THE ONLY LOGICAL CLICK HANDLER
-   ══════════════════════════════════════════ */
-tapZone.addEventListener('click', () => {
-    console.log("👆 Tap Zone Triggered");
-
-    // 1. Check if the Vapi library actually loaded
-    if (typeof Vapi === 'undefined') {
-        console.error("❌ Vapi is still undefined. The library failed to load.");
-        activateGuestMode();
-        return;
-    }
-
-    // 2. Initialize the instance if it doesn't exist
-    if (!vapiInstance) {
-        try {
-            vapiInstance = new Vapi(VAPI_PUBLIC_KEY);
-            setupVapiListeners(); // Ensure your listeners are attached
-        } catch (err) {
-            console.error("❌ Failed to initialize Vapi:", err);
+        // Check for Vapi (Fixes "exports is not defined" crash impact)
+        if (typeof Vapi === 'undefined') {
+            alert("Vapi Library Error: Check console for 'exports' error.");
             return;
         }
-    }
 
-    // 3. Start the call
-    console.log("🚀 Starting Vapi Call...");
-    vapiInstance.start(ASSISTANT_ID);
-});
+        if (!vapiInstance) {
+            vapiInstance = new Vapi(VAPI_PUBLIC_KEY);
+        }
+
+        vapiInstance.start(ASSISTANT_ID);
+    });
     </script>
 </body>
 </html>
