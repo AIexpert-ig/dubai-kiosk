@@ -5,765 +5,171 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Travel Expert ™ | The AI Concierge</title>
 
-    <!--
-        SOCKET.IO — version-locked, loaded before anything else.
-        If this also gets blocked on the target network, host it
-        locally too (copy socket.io.min.js to your GitHub repo).
-    -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
-    <!--
-        VAPI — SELF-HOSTED.
-        No jsdelivr. No unpkg. No external CDN.
-        File lives in YOUR GitHub Pages repo at the same path as this HTML.
-        Network cannot block github.io if it is your own domain.
-
-        HOW TO CREATE vapi.js:
-          1. npm install @vapi-ai/web
-          2. Copy node_modules/@vapi-ai/web/dist/vapi.browser.js → vapi.js
-          3. Commit vapi.js to your GitHub repo root
-          4. Done. This tag will find it.
-    -->
     <script src="vapi.js"></script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@200;300;400;700&display=swap" rel="stylesheet">
 
     <style>
-        /* ═══════════════════════════════════════════
-           TOKENS
-        ═══════════════════════════════════════════ */
         :root {
-            --gold:         #D4AF37;
-            --gold-glow:    rgba(212,175,55,0.40);
-            --gold-dim:     rgba(212,175,55,0.14);
-            --black:        #050505;
-            --glass:        rgba(5,5,5,0.56);
-            --glass-border: rgba(212,175,55,0.16);
-            --blur:         22px;
-            --ease:         cubic-bezier(0.16, 1, 0.3, 1);
-            --ease-s:       cubic-bezier(0.4,  0, 0.2, 1);
+            --gold: #D4AF37;
+            --black: #050505;
+            --glass: rgba(5,5,5,0.7);
+            --blur: 20px;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        html, body {
-            width: 100%; height: 100%;
+        body {
+            width: 100%; height: 100vh;
             overflow: hidden;
             background: var(--black);
             font-family: 'Montserrat', sans-serif;
             color: white;
         }
 
-        /* ═══════════════════════════════════════════
-           LAYER 1 — FULL-SCREEN AGENT VIDEO
-        ═══════════════════════════════════════════ */
+        /* L1: THE CHARACTER (Always Visible) */
         #agent-video {
             position: fixed; inset: 0;
             width: 100%; height: 100%;
             object-fit: cover;
-            object-position: center top;  /* face stays in frame on tall tablets */
             z-index: 0;
-
-            /* Idle: warm, cinematic, slightly dimmed */
-            filter: brightness(0.80) saturate(1.05);
-            transform: scale(1);
-            transition: filter 1.1s var(--ease-s), transform 1.3s var(--ease-s);
-            animation: agentBreathe 7s var(--ease-s) infinite;
+            filter: brightness(0.7);
+            transition: filter 1s ease, transform 1s ease;
         }
 
-        /* Idle: slow breath so agent never looks frozen */
-        @keyframes agentBreathe {
-            0%, 100% { transform: scale(1.000); }
-            50%       { transform: scale(1.008); }
-        }
+        #agent-video.active { filter: brightness(1.1) saturate(1.1); transform: scale(1.02); }
 
-        /* Listening: agent leans in, warm glow */
-        #agent-video.v-listening {
-            filter: brightness(1.05) saturate(1.20) contrast(1.08)
-                    drop-shadow(0 0 48px rgba(212,175,55,0.28));
-            transform: scale(1.022);
-            animation: none;
-        }
-
-        /* Speaking: fully alive, strong gold aura */
-        #agent-video.v-speaking {
-            filter: brightness(1.20) saturate(1.30) contrast(1.10)
-                    drop-shadow(0 0 72px rgba(212,175,55,0.45));
-            transform: scale(1.032);
-            animation: none;
-        }
-
-        /* Thinking: subdued, holds attention */
-        #agent-video.v-thinking {
-            filter: brightness(0.88) saturate(1.10);
-            transform: scale(1.004);
-            animation: none;
-        }
-
-        /* Guest Mode: desaturated — system is present but limited */
-        #agent-video.v-guest {
-            filter: brightness(0.70) saturate(0.40) contrast(0.95);
-            animation: agentBreathe 9s var(--ease-s) infinite;
-        }
-
-        /* ═══════════════════════════════════════════
-           LAYER 2 — CINEMATIC VIGNETTE
-        ═══════════════════════════════════════════ */
+        /* L2: THE VIGNETTE */
         #vignette {
             position: fixed; inset: 0; z-index: 1; pointer-events: none;
-            background:
-                radial-gradient(ellipse 70% 80% at 50% 45%,
-                    transparent 30%, rgba(5,5,5,0.72) 100%),
-                linear-gradient(to bottom,
-                    rgba(5,5,5,0.45) 0%,
-                    transparent 20%,
-                    transparent 65%,
-                    rgba(5,5,5,0.85) 100%);
+            background: radial-gradient(circle at center, transparent 20%, rgba(0,0,0,0.8) 100%);
         }
 
-        /* ═══════════════════════════════════════════
-           LAYER 3 — VIBE TINT
-        ═══════════════════════════════════════════ */
-        #vibe-tint {
-            position: fixed; inset: 0; z-index: 2;
-            pointer-events: none; opacity: 0;
-            transition: opacity 1.8s var(--ease-s);
-        }
-        body.vibe-rain      #vibe-tint { background: rgba(0,26,52,0.42);  opacity: 1; }
-        body.vibe-luxury    #vibe-tint { background: rgba(40,28,0,0.48);  opacity: 1; }
-        body.vibe-adventure #vibe-tint { background: rgba(40,0,0,0.48);   opacity: 1; }
-
-        /* ═══════════════════════════════════════════
-           LAYER 4 — AI STATE HUD (always visible)
-        ═══════════════════════════════════════════ */
-        #ai-hud {
-            position: fixed; top: 24px; right: 24px; z-index: 20;
-            display: flex; align-items: center; gap: 9px;
-            background: rgba(5,5,5,0.72);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 30px; padding: 9px 18px;
-            backdrop-filter: blur(16px);
-            transition: right 0.5s var(--ease), all 0.4s ease;
-        }
-        body.pass-open #ai-hud { right: calc(330px + 24px); }
-
-        #ai-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: rgba(255,255,255,0.15);
-            transition: background 0.4s ease, box-shadow 0.4s ease;
-        }
-        #ai-label {
-            font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase;
-            color: rgba(255,255,255,0.30); transition: color 0.4s ease;
-            white-space: nowrap;
+        /* L3: HUD & UI */
+        #ui-layer {
+            position: relative; z-index: 10;
+            height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center;
+            background: rgba(0,0,0,0.2);
         }
 
-        #ai-hud.s-idle      #ai-dot  { background: rgba(255,255,255,0.20); }
-        #ai-hud.s-listening #ai-dot  { background:#4ade80; box-shadow:0 0 10px #4ade80; animation:dotPulse 1s ease infinite; }
-        #ai-hud.s-listening #ai-label { color:#4ade80; }
-        #ai-hud.s-thinking  #ai-dot  { background:var(--gold); box-shadow:0 0 10px var(--gold); animation:dotPulse 0.7s ease infinite; }
-        #ai-hud.s-thinking  #ai-label { color:#F0D060; }
-        #ai-hud.s-speaking  #ai-dot  { background:#a78bfa; box-shadow:0 0 10px #a78bfa; animation:dotPulse 0.45s ease infinite; }
-        #ai-hud.s-speaking  #ai-label { color:#c4b5fd; }
-        #ai-hud.s-executing #ai-dot  { background:#60a5fa; box-shadow:0 0 10px #60a5fa; animation:dotSpin 0.55s linear infinite; }
-        #ai-hud.s-executing #ai-label { color:#93c5fd; }
-        #ai-hud.s-offline   #ai-dot  { background:#f87171; box-shadow:0 0 8px #f87171; }
-        #ai-hud.s-offline   #ai-label { color:#fca5a5; }
-        #ai-hud.s-guest     #ai-dot  { background:#fb923c; box-shadow:0 0 8px rgba(251,146,60,0.5); animation:dotPulse 2s ease infinite; }
-        #ai-hud.s-guest     #ai-label { color:#fdba74; }
-
-        @keyframes dotPulse {
-            0%,100% { transform:scale(1); opacity:1; }
-            50%      { transform:scale(1.65); opacity:0.5; }
-        }
-        @keyframes dotSpin { to { transform:rotate(360deg); } }
-
-        /* ═══════════════════════════════════════════
-           LAYER 4 — IDLE HERO TEXT
-        ═══════════════════════════════════════════ */
-        #idle-hero {
-            position: fixed; bottom: 80px; left: 64px;
-            z-index: 5; max-width: 520px;
-            transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
-        }
-        body.call-active   #idle-hero { opacity: 0; transform: translateY(20px); pointer-events: none; }
-        body.guest-mode    #idle-hero { opacity: 0; transform: translateY(20px); pointer-events: none; }
-
-        .hero-eyebrow {
-            font-size: 0.6rem; letter-spacing: 0.5em; text-transform: uppercase;
-            color: var(--gold); margin-bottom: 14px;
-            opacity: 0; animation: slideUp 1s 0.4s var(--ease) forwards;
-        }
         .hero-title {
             font-family: 'Cormorant Garamond', serif;
-            font-size: clamp(3.2rem, 6.5vw, 5.8rem);
-            font-weight: 300; line-height: 0.95; letter-spacing: 0.03em;
-            color: white; margin-bottom: 10px;
-            opacity: 0; animation: slideUp 1s 0.55s var(--ease) forwards;
+            font-size: 4rem; font-weight: 300; letter-spacing: 5px;
+            margin-bottom: 10px; color: white;
         }
-        .hero-title em { font-style: italic; color: var(--gold); }
-        .hero-sub {
-            font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase;
-            color: rgba(255,255,255,0.35); margin-bottom: 44px;
-            opacity: 0; animation: slideUp 1s 0.70s var(--ease) forwards;
+        .hero-title em { color: var(--gold); font-style: italic; }
+
+        #status-hud {
+            position: fixed; top: 30px; right: 30px;
+            padding: 10px 20px; border-radius: 30px;
+            background: var(--glass); backdrop-filter: blur(var(--blur));
+            border: 1px solid rgba(212,175,55,0.2);
+            font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase;
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(18px); }
-            to   { opacity: 1; transform: translateY(0); }
+        #talk-btn {
+            margin-top: 40px; padding: 20px 50px;
+            background: transparent; border: 1px solid var(--gold);
+            color: var(--gold); font-size: 0.8rem; letter-spacing: 4px;
+            cursor: pointer; transition: all 0.3s ease;
+            text-transform: uppercase;
         }
+        #talk-btn:active { background: var(--gold); color: black; }
 
-        /* Touch-to-start hint */
-        #touch-hint {
-            display: flex; align-items: center; gap: 14px;
-            opacity: 0; animation: slideUp 1s 0.9s var(--ease) forwards;
-        }
-        /* Hide hint during guest mode */
-        body.guest-mode #touch-hint { display: none; }
-
-        .hint-ring {
-            width: 56px; height: 56px; border-radius: 50%;
-            border: 1px solid rgba(212,175,55,0.5);
-            display: flex; align-items: center; justify-content: center;
-            animation: ringPulse 2.4s var(--ease-s) infinite;
-        }
-        .hint-ring-inner {
-            width: 36px; height: 36px; border-radius: 50%;
-            background: var(--gold-dim); border: 1px solid var(--gold);
-        }
-        @keyframes ringPulse {
-            0%,100% { box-shadow: 0 0 0 0   var(--gold-glow); }
-            50%      { box-shadow: 0 0 0 14px rgba(212,175,55,0); }
-        }
-        .hint-text {
-            font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase;
-            color: rgba(255,255,255,0.40);
-        }
-
-        /* ═══════════════════════════════════════════
-           LAYER 5 — GUEST MODE OVERLAY
-           Shown when vapi.js failed to load.
-           Guest can still see the character but voice is off.
-        ═══════════════════════════════════════════ */
-        #guest-overlay {
-            position: fixed; inset: 0; z-index: 6;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: flex-end;
-            padding-bottom: 80px;
-            pointer-events: none; opacity: 0;
-            transition: opacity 0.8s var(--ease);
-        }
-        body.guest-mode #guest-overlay { opacity: 1; pointer-events: auto; }
-
-        .guest-card {
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px; padding: 32px 40px;
-            backdrop-filter: blur(var(--blur));
-            -webkit-backdrop-filter: blur(var(--blur));
-            text-align: center; max-width: 440px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,175,55,0.1);
-        }
-
-        /* Gold corner accents on the card */
-        .guest-card { position: relative; }
-        .guest-card::before, .guest-card::after {
-            content: ''; position: absolute;
-            width: 28px; height: 28px;
-            border-color: rgba(212,175,55,0.3); border-style: solid;
-        }
-        .guest-card::before { top: 14px; left: 14px; border-width: 1px 0 0 1px; }
-        .guest-card::after  { bottom: 14px; right: 14px; border-width: 0 1px 1px 0; }
-
-        .guest-eyebrow {
-            font-size: 0.56rem; letter-spacing: 0.5em; text-transform: uppercase;
-            color: rgba(251,146,60,0.8); margin-bottom: 10px;
-        }
-        .guest-title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.7rem; font-weight: 300; letter-spacing: 0.06em;
-            color: white; margin-bottom: 10px;
-        }
-        .guest-body {
-            font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase;
-            color: rgba(255,255,255,0.30); line-height: 2.2; margin-bottom: 28px;
-        }
-
-        /* Manual Reconnect button */
-        #reconnect-btn {
-            display: inline-flex; align-items: center; gap: 10px;
-            padding: 15px 44px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.66rem; font-weight: 700;
-            letter-spacing: 0.3em; text-transform: uppercase;
-            background: transparent; color: var(--gold);
-            border: 1px solid rgba(212,175,55,0.45);
-            border-radius: 50px; cursor: pointer;
-            position: relative; overflow: hidden;
-            transition: all 0.35s ease;
-        }
-        #reconnect-btn::before {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(135deg, var(--gold), #b8941f);
-            transform: scaleX(0); transform-origin: left;
-            transition: transform 0.4s var(--ease); z-index: -1;
-        }
-        #reconnect-btn:hover            { color: #000; box-shadow: 0 0 32px var(--gold-glow); }
-        #reconnect-btn:hover::before    { transform: scaleX(1); }
-        #reconnect-btn:disabled         { opacity: 0.35; cursor: not-allowed; }
-
-        .reconnect-spinner {
-            display: none; width: 13px; height: 13px; border-radius: 50%;
-            border: 2px solid rgba(0,0,0,0.2); border-top-color: currentColor;
-            animation: spin 0.65s linear infinite;
-        }
-        #reconnect-btn.retrying .reconnect-spinner { display: block; }
-        #reconnect-btn.retrying .reconnect-text    { opacity: 0.65; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* ═══════════════════════════════════════════
-           LAYER 5 — SESSION BAR (during active call)
-        ═══════════════════════════════════════════ */
         #session-bar {
-            position: fixed; bottom: 36px; left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            z-index: 6;
-            display: flex; align-items: center; gap: 20px;
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            border-radius: 60px; padding: 14px 28px;
-            backdrop-filter: blur(var(--blur));
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+            position: fixed; bottom: 50px;
+            display: none; align-items: center; gap: 20px;
+            padding: 15px 30px; border-radius: 50px;
+            background: var(--glass); backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--gold);
         }
-        body.call-active #session-bar {
-            opacity: 1; transform: translateX(-50%) translateY(0);
-            pointer-events: auto;
-        }
-
-        #waveform { display: flex; align-items: center; gap: 3px; height: 22px; }
-        #waveform span {
-            display: block; width: 3px; border-radius: 2px;
-            background: var(--gold); height: 5px;
-        }
-        #waveform span:nth-child(1) { animation: wave 1.3s 0.00s ease-in-out infinite; }
-        #waveform span:nth-child(2) { animation: wave 1.3s 0.15s ease-in-out infinite; }
-        #waveform span:nth-child(3) { animation: wave 1.3s 0.30s ease-in-out infinite; }
-        #waveform span:nth-child(4) { animation: wave 1.3s 0.45s ease-in-out infinite; }
-        #waveform span:nth-child(5) { animation: wave 1.3s 0.60s ease-in-out infinite; }
-        @keyframes wave {
-            0%,100% { height: 4px;  opacity: 0.35; }
-            50%      { height: 18px; opacity: 1;    }
-        }
-        body.st-listening #waveform span { animation-duration: 0.7s; }
-        body.st-speaking  #waveform span { animation-duration: 0.45s; }
-        body.st-thinking  #waveform span { opacity: 0.2 !important; height: 4px !important; animation: none; }
-
-        #session-label {
-            font-size: 0.62rem; letter-spacing: 0.25em; text-transform: uppercase;
-            color: rgba(255,255,255,0.40); white-space: nowrap;
-        }
-        #end-btn {
-            padding: 9px 22px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.58rem; font-weight: 700;
-            letter-spacing: 0.22em; text-transform: uppercase;
-            background: rgba(255,65,43,0.10); color: rgba(255,100,80,0.90);
-            border: 1px solid rgba(255,65,43,0.30);
-            border-radius: 30px; cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        #end-btn:hover { background: rgba(255,65,43,0.22); box-shadow: 0 0 18px rgba(255,65,43,0.20); }
-
-        /* ═══════════════════════════════════════════
-           LAYER 6 — THE PASS (QR code hand-off)
-           Slides from bottom-right as if the agent
-           is placing a brochure on the counter.
-        ═══════════════════════════════════════════ */
-        #the-pass {
-            position: fixed; bottom: 48px; right: 52px;
-            z-index: 10;
-            display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
-            transform: translateY(120%) translateX(20px);
-            opacity: 0; pointer-events: none;
-            transition: transform 1s var(--ease), opacity 0.8s var(--ease);
-        }
-        #the-pass.open { transform: translateY(0) translateX(0); opacity: 1; pointer-events: auto; }
-
-        .pass-label {
-            font-size: 0.58rem; letter-spacing: 0.35em; text-transform: uppercase;
-            color: rgba(212,175,55,0.60); text-align: right;
-        }
-        .pass-card {
-            background: rgba(255,255,255,0.96);
-            border-radius: 18px; padding: 20px 22px; text-align: center;
-            box-shadow: 0 28px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(212,175,55,0.35),
-                        0 0 40px rgba(212,175,55,0.10);
-            animation: passReveal 0.9s var(--ease) both;
-        }
-        @keyframes passReveal {
-            from { transform: scale(0.90) rotate(-1.5deg); filter: blur(4px); opacity: 0; }
-            to   { transform: scale(1)    rotate(0deg);    filter: blur(0);   opacity: 1; }
-        }
-        .pass-card h3 {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.15rem; font-weight: 600; color: #111;
-            margin-bottom: 14px; letter-spacing: 0.04em;
-        }
-        .pass-card img { display: block; border-radius: 8px; }
-        .pass-card-sub {
-            font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
-            color: #555; margin-top: 12px;
-        }
-        .pass-dismiss {
-            font-size: 0.56rem; letter-spacing: 0.3em; text-transform: uppercase;
-            color: rgba(255,255,255,0.25); background: none; border: none;
-            cursor: pointer; padding: 4px 0; transition: color 0.3s ease;
-        }
-        .pass-dismiss:hover { color: rgba(255,255,255,0.60); }
-
-        /* ═══════════════════════════════════════════
-           LAYER 7 — OFFLINE BANNER (socket bridge)
-        ═══════════════════════════════════════════ */
-        #offline-banner {
-            position: fixed; bottom: 24px; left: 50%;
-            transform: translateX(-50%) translateY(80px);
-            z-index: 30;
-            background: rgba(248,113,113,0.10);
-            border: 1px solid rgba(248,113,113,0.28);
-            border-radius: 50px; padding: 10px 28px;
-            font-size: 0.6rem; letter-spacing: 0.25em;
-            color: #fca5a5; text-transform: uppercase;
-            backdrop-filter: blur(12px);
-            transition: transform 0.6s var(--ease), opacity 0.6s ease;
-            opacity: 0; pointer-events: none;
-        }
-        #offline-banner.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-        /* TAP ZONE — full-screen, idle only */
-        #tap-zone {
-            position: fixed; inset: 0; z-index: 4; cursor: pointer;
-        }
-        body.call-active #tap-zone  { pointer-events: none; }
-        body.guest-mode  #tap-zone  { pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <!-- L1: AGENT VIDEO
-         Replace src with your looping MP4.
-         H.264, 1080p, 15-30s loop. Character looks directly into camera.
-    -->
-    <video
-        id="agent-video"
-        src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4"
-        autoplay loop muted playsinline preload="auto"
-        crossorigin="anonymous"
-    ></video>
+    <video id="agent-video" autoplay loop muted playsinline>
+        <source src="bg.mp4" type="video/mp4">
+    </video>
 
-    <!-- L2 -->
     <div id="vignette"></div>
 
-    <!-- L3 -->
-    <div id="vibe-tint"></div>
+    <div id="status-hud">Connecting...</div>
 
-    <!-- L4: HUD -->
-    <div id="ai-hud" class="s-idle">
-        <div id="ai-dot"></div>
-        <span id="ai-label">Loading...</span>
-    </div>
+    <div id="ui-layer">
+        <div id="hero-content">
+            <p style="letter-spacing: 8px; font-size: 0.6rem; opacity: 0.7;">DUBAI LUXURY</p>
+            <h1 class="hero-title">Travel <em>Expert</em></h1>
+            <p style="letter-spacing: 3px; font-size: 0.7rem; opacity: 0.5;">THE AI CONCIERGE</p>
+            <button id="talk-btn">Begin Experience</button>
+        </div>
 
-    <!-- L4: IDLE HERO -->
-    <div id="idle-hero">
-        <p class="hero-eyebrow">Dubai's Premier AI Concierge</p>
-        <h1 class="hero-title">Your Personal<br><em>Travel Expert</em></h1>
-        <p class="hero-sub">Powered by Artificial Intelligence</p>
-        <div id="touch-hint">
-            <div class="hint-ring"><div class="hint-ring-inner"></div></div>
-            <span class="hint-text">Touch Anywhere to Begin</span>
+        <div id="session-bar">
+            <span id="session-label">AGENT LISTENING</span>
+            <button id="end-btn" style="background: none; border: none; color: #ff4444; cursor: pointer; font-weight: bold; font-size: 0.7rem; letter-spacing: 2px;">END SESSION</button>
         </div>
     </div>
-
-    <!-- L5: GUEST MODE OVERLAY -->
-    <div id="guest-overlay">
-        <div class="guest-card">
-            <p class="guest-eyebrow">Guest Mode Active</p>
-            <h2 class="guest-title">Voice Unavailable</h2>
-            <p class="guest-body">
-                The voice engine could not be loaded.<br>
-                Hosting a restricted network or firewall.<br>
-                Please ask a team member for assistance.
-            </p>
-            <button id="reconnect-btn">
-                <div class="reconnect-spinner"></div>
-                <span class="reconnect-text">Manual Reconnect</span>
-            </button>
-        </div>
-    </div>
-
-    <!-- L5: SESSION BAR -->
-    <div id="session-bar">
-        <div id="waveform">
-            <span></span><span></span><span></span><span></span><span></span>
-        </div>
-        <span id="session-label">Connecting...</span>
-        <button id="end-btn">End Session</button>
-    </div>
-
-    <!-- L6: THE PASS (QR hand-off) -->
-    <div id="the-pass">
-        <span class="pass-label">Your Concierge Has Prepared</span>
-        <div class="pass-card">
-            <h3 id="pass-tour-name">Experience Details</h3>
-            <img id="pass-qr-img" src="" alt="Scan to Book" width="220" height="220">
-            <p class="pass-card-sub">Scan with your phone to book</p>
-        </div>
-        <button class="pass-dismiss" id="pass-dismiss">Dismiss ✕</button>
-    </div>
-
-    <!-- TAP ZONE -->
-    <div id="tap-zone"></div>
-
-    <!-- L7 -->
-    <div id="offline-banner">⚠ Bridge offline — reconnecting…</div>
 
     <script>
-        /* ══════════════════════════════════════════
-           CREDENTIALS
-        ══════════════════════════════════════════ */
-        const RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
-        const VAPI_PUBLIC_KEY   = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
-        const ASSISTANT_ID      = "fcb09257-e877-494d-a7c9-d3a152da0059";
+        const RENDER_URL = "https://kiosk-bridge.onrender.com";
+        const VAPI_KEY = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
+        const ASSISTANT_ID = "fcb09257-e877-494d-a7c9-d3a152da0059";
 
-        /* ══════════════════════════════════════════
-           DOM
-        ══════════════════════════════════════════ */
-        const agentVideo     = document.getElementById('agent-video');
-        const tapZone        = document.getElementById('tap-zone');
-        const sessionLabel   = document.getElementById('session-label');
-        const endBtn         = document.getElementById('end-btn');
-        const thePass        = document.getElementById('the-pass');
-        const passTourName   = document.getElementById('pass-tour-name');
-        const passQrImg      = document.getElementById('pass-qr-img');
-        const passDismiss    = document.getElementById('pass-dismiss');
-        const aiHud          = document.getElementById('ai-hud');
-        const aiLabel        = document.getElementById('ai-label');
-        const offlineBanner  = document.getElementById('offline-banner');
-        const reconnectBtn   = document.getElementById('reconnect-btn');
-
-        /* ══════════════════════════════════════════
-           VIDEO STATE
-        ══════════════════════════════════════════ */
-        function setVideoState(s) {
-            agentVideo.classList.remove('v-listening','v-speaking','v-thinking','v-guest');
-            if (s !== 'idle') agentVideo.classList.add(`v-${s}`);
-        }
-
-        /* ══════════════════════════════════════════
-           AI STATE MACHINE
-        ══════════════════════════════════════════ */
-        const HUD = {
-            idle:      { cls:'s-idle',      lbl:'System Online'       },
-            listening: { cls:'s-listening', lbl:'Listening...'        },
-            thinking:  { cls:'s-thinking',  lbl:'Thinking...'         },
-            speaking:  { cls:'s-speaking',  lbl:'Speaking...'         },
-            executing: { cls:'s-executing', lbl:'Preparing...'        },
-            offline:   { cls:'s-offline',   lbl:'Bridge Offline'      },
-            guest:     { cls:'s-guest',     lbl:'Guest Mode'          },
-        };
-
-        function setAIState(key) {
-            const s = HUD[key] || HUD.idle;
-            aiHud.className     = s.cls;
-            aiLabel.textContent = s.lbl;
-            document.body.classList.remove('st-listening','st-speaking','st-thinking');
-            if (key === 'listening') document.body.classList.add('st-listening');
-            if (key === 'speaking')  document.body.classList.add('st-speaking');
-            if (key === 'thinking')  document.body.classList.add('st-thinking');
-            const lblMap = {
-                listening:'Listening to You...', thinking:'Thinking...',
-                speaking:'Your Agent is Speaking', executing:'Preparing Your Info...',
-                idle:'Connected',
-            };
-            if (lblMap[key]) sessionLabel.textContent = lblMap[key];
-            const videoMap = {
-                listening:'listening', speaking:'speaking',
-                thinking:'thinking',   executing:'thinking', guest:'guest',
-            };
-            setVideoState(videoMap[key] || 'idle');
-        }
-
-        /* ══════════════════════════════════════════
-           VIBE
-        ══════════════════════════════════════════ */
-        function setVibe(v) {
-            document.body.classList.remove('vibe-rain','vibe-luxury','vibe-adventure');
-            if (v) document.body.classList.add(`vibe-${v}`);
-        }
-
-        /* ══════════════════════════════════════════
-           THE PASS
-        ══════════════════════════════════════════ */
-        function openPass(name, url) {
-            passTourName.textContent = name || 'Your Experience';
-            passQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
-            thePass.classList.add('open');
-            document.body.classList.add('pass-open');
-        }
-        function closePass() {
-            thePass.classList.remove('open');
-            document.body.classList.remove('pass-open');
-        }
-        passDismiss.addEventListener('click', closePass);
-
-        /* ══════════════════════════════════════════
-           OFFLINE
-        ══════════════════════════════════════════ */
-        function showOffline(show) {
-            offlineBanner.classList.toggle('visible', show);
-            if (show) setAIState('offline');
-        }
-
-        /* ══════════════════════════════════════════
-           SOCKET.IO
-           rejectUnauthorized: false  — allows connection
-             through self-signed or corporate SSL proxies
-             that intercept HTTPS traffic (common in hotels,
-             airports, and enterprise networks).
-           transports: ['websocket','polling'] — if WebSocket
-             is blocked by the firewall, falls back to
-             long-polling over regular HTTP automatically.
-        ══════════════════════════════════════════ */
-        const socket = io(RENDER_BRIDGE_URL, {
-            transports:           ['websocket', 'polling'],
-            rejectUnauthorized:   false,
-            reconnection:         true,
-            reconnectionAttempts: Infinity,
-            reconnectionDelay:    2000,
-            reconnectionDelayMax: 15000,
-            timeout:              10000,
+        // 1. FORCED POLLING SOCKET (The Firewall Bypass)
+        const socket = io(RENDER_URL, {
+            transports: ['polling'],
+            upgrade: false,
+            reconnection: true
         });
+
+        const statusHud = document.getElementById('status-hud');
+        const agentVideo = document.getElementById('agent-video');
+        const talkBtn = document.getElementById('talk-btn');
+        const sessionBar = document.getElementById('session-bar');
+        const heroContent = document.getElementById('hero-content');
 
         socket.on('connect', () => {
-            showOffline(false);
-            // Don't override guest state if Vapi failed
-            if (!document.body.classList.contains('guest-mode')) setAIState('idle');
-            console.log('✅ Socket:', socket.id, '| transport:', socket.io.engine.transport.name);
-        });
-        socket.on('disconnect',    (r)   => { showOffline(true);  console.warn('🔌', r); });
-        socket.on('connect_error', (err) => { showOffline(true);  console.error('❌', err.message); });
-
-        socket.on('AI_STATE_UPDATE', ({ state }) => {
-            if (document.body.classList.contains('guest-mode')) return; // ignore in guest mode
-            const map = { LISTENING:'listening', THINKING:'thinking', SPEAKING:'speaking', EXECUTING:'executing', IDLE:'idle' };
-            setAIState(map[state] || 'idle');
+            statusHud.textContent = "SYSTEM READY";
+            statusHud.style.color = "#4ade80";
         });
 
-        socket.on('COMMAND_UPDATE_UI', (data) => {
-            const { viewType, tourName, qrUrl, vibe } = data;
-            setVibe(vibe);
-            if (!document.body.classList.contains('guest-mode')) setAIState('executing');
-            const delay = vibe === 'luxury' ? 1800 : 600;
-            if (viewType === 'tour_details' || viewType === 'booking_qr') {
-                setTimeout(() => { openPass(tourName, qrUrl); setAIState('idle'); }, delay);
-            } else {
-                setTimeout(() => setAIState('idle'), delay);
-            }
+        socket.on('disconnect', () => {
+            statusHud.textContent = "RECONNECTING...";
+            statusHud.style.color = "#f87171";
         });
 
-        /* ══════════════════════════════════════════
-           GUEST MODE
-           Activated when vapi.js is absent or broken.
-           Character stays visible. Voice is off.
-           Manual Reconnect reloads the page (which
-           re-executes the self-hosted script tag).
-        ══════════════════════════════════════════ */
-        function activateGuestMode() {
-            console.warn('⚠ Vapi not available — activating Guest Mode.');
-            document.body.classList.add('guest-mode');
-            tapZone.style.pointerEvents = 'none';
-            setAIState('guest');
-        }
-
-        reconnectBtn.addEventListener('click', () => {
-            // Hard reload re-executes <script src="vapi.js">
-            // If the file is now in the repo, this will succeed.
-            reconnectBtn.disabled = true;
-            reconnectBtn.classList.add('retrying');
-            setTimeout(() => window.location.reload(), 500);
-        });
-
-        /* ══════════════════════════════════════════
-           VAPI BOOTSTRAP
-           vapi.js is loaded as a blocking script tag above.
-           By this point in execution, window.Vapi is either
-           defined (file exists in repo) or undefined (file
-           missing / network block caught it).
-        ══════════════════════════════════════════ */
-        function bootVapi() {
-            // Guard: vapi.js loaded but Vapi class is not exported to window
-            if (typeof Vapi === 'undefined') {
-                activateGuestMode();
-                return;
-            }
-
-            console.log('✅ Vapi confirmed. ASSISTANT_ID:', ASSISTANT_ID);
-            const vapi = new Vapi(VAPI_PUBLIC_KEY);
-
-            tapZone.style.pointerEvents = 'auto';
-            setAIState('idle');
-
-            // Full-screen tap to start
-            tapZone.addEventListener('click', () => {
-                if (document.body.classList.contains('call-active')) return;
-                console.log('🎤 vapi.start() →', ASSISTANT_ID);
-                vapi.start(ASSISTANT_ID);
-                document.body.classList.add('call-active');
-                sessionLabel.textContent = 'Connecting...';
-                setAIState('thinking');
-            });
-
-            endBtn.addEventListener('click', () => vapi.stop());
-
-            // Speech-reactive video filters
-            vapi.on('speech-start', () => setAIState('listening'));
-            vapi.on('speech-end',   () => setAIState('thinking'));
-
-            vapi.on('message', (msg) => {
-                if (msg.type === 'speech-update') {
-                    if (msg.role === 'assistant' && msg.status === 'started') setAIState('speaking');
-                    if (msg.role === 'assistant' && msg.status === 'stopped')  setAIState('idle');
-                }
-            });
-
-            vapi.on('call-start', () => { sessionLabel.textContent = 'Connected'; setAIState('idle'); });
-
-            vapi.on('call-end', () => {
-                document.body.classList.remove('call-active');
-                setVibe(null); closePass();
-                setAIState('idle'); setVideoState('idle');
-                tapZone.style.pointerEvents = 'auto';
-            });
-
-            vapi.on('error', (err) => {
-                console.error('❌ Vapi error:', err);
-                document.body.classList.remove('call-active');
-                setAIState('idle');
-            });
-        }
-
-        /* ══════════════════════════════════════════
-           ENTRY POINT
-           Use DOMContentLoaded — no need for window.onload
-           because vapi.js is a blocking script tag and is
-           already executed by the time this inline script runs.
-        ══════════════════════════════════════════ */
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', bootVapi);
+        // 2. VAPI INITIALIZATION (Local File)
+        let vapiInstance = null;
+        if (typeof Vapi !== 'undefined') {
+            vapiInstance = new Vapi(VAPI_KEY);
         } else {
-            bootVapi();
+            statusHud.textContent = "VAPI OFFLINE";
         }
+
+        talkBtn.addEventListener('click', () => {
+            if (vapiInstance) {
+                vapiInstance.start(ASSISTANT_ID);
+                heroContent.style.display = 'none';
+                sessionBar.style.display = 'flex';
+                agentVideo.classList.add('active');
+            }
+        });
+
+        document.getElementById('end-btn').addEventListener('click', () => {
+            vapiInstance.stop();
+            location.reload(); 
+        });
+
+        // 3. UI State Sync
+        socket.on('AI_STATE_UPDATE', ({ state }) => {
+            statusHud.textContent = state;
+            if (state === 'SPEAKING') agentVideo.style.filter = "brightness(1.2)";
+            else agentVideo.style.filter = "brightness(0.8)";
+        });
+
     </script>
 </body>
 </html>
