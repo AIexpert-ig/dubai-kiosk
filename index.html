@@ -1182,6 +1182,23 @@
             setTimeout(() => window.location.reload(), 500);
         });
 
+        /* ── Screen Wake Lock (Keep-Alive) ── */
+        let wakeLock = null;
+        async function requestWakeLock() {
+            try { 
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('🔒 Screen Wake Lock is active');
+                }
+            } catch (err) {
+                console.error(`❌ Wake Lock error: ${err.name}, ${err.message}`);
+            }
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
+        });
+        requestWakeLock();
+
         /* ── Vapi Bootstrap ── */
         function bootVapi() {
             if (typeof window.Vapi !== 'undefined') {
