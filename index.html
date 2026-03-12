@@ -1211,6 +1211,21 @@
                         if (msg.role === 'assistant' && msg.status === 'started') setAIState('speaking');
                         if (msg.role === 'assistant' && msg.status === 'stopped') setAIState('idle');
                     }
+                    if (msg.type === 'tool-calls' && msg.toolCalls?.[0]?.function?.name === 'send_booking_to_human') {
+                        const call = msg.toolCalls[0];
+                        const args = JSON.parse(call.function.arguments || '{}');
+                        
+                        // 1. Trigger the Visuals with data from the AI
+                        openPass(args.tourName || "Desert Safari", args.qrUrl || "https://your-link.com");
+                        setVibe(args.vibe || 'luxury');
+
+                        // 2. THE HANDSHAKE
+                        vapiInstance.send({
+                            type: 'tool-call-result',
+                            toolCallId: call.id,
+                            result: "The QR code has been successfully displayed on the Kiosk screen."
+                        });
+                    }
                 });
                 vapiInstance.on('call-start', () => {
                     document.body.classList.add('call-active');
