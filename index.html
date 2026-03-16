@@ -1,1275 +1,411 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#050505">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
-
-    <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-
-    <title>Travel Expert ™ | The AI Concierge</title>
-
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@200;300;400;700&display=swap"
-        rel="stylesheet">
-
-    <style>
-        :root {
-            --gold: #D4AF37;
-            --gold-glow: rgba(212, 175, 55, 0.40);
-            --gold-dim: rgba(212, 175, 55, 0.14);
-            --black: #050505;
-            --glass: rgba(5, 5, 5, 0.52);
-            --glass-border: rgba(212, 175, 55, 0.18);
-            --blur: 24px;
-            --ease: cubic-bezier(0.16, 1, 0.3, 1);
-            --ease-s: cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #050505;
-            font-family: 'Montserrat', sans-serif;
-            color: white;
-        }
-
-        /* ═══════════════════════════════════════════════════
-           L1 — CINEMATIC BACKGROUND VIDEO
-           Source: Mixkit — Dubai Burj Khalifa Tower Time Lapse
-           License: Free · No watermark · mixkit.co/license
-           720p primary, 360p fallback via <source> tags.
-           object-fit:cover fills any screen without distortion.
-        ═══════════════════════════════════════════════════ */
-        #bg-video {
-            position: fixed;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center center;
-            z-index: 0;
-            /* Subtle scale animation — video never feels static */
-            animation: videoBreath 20s var(--ease-s) infinite alternate;
-        }
-
-        @keyframes videoBreath {
-            from {
-                transform: scale(1.00);
-            }
-
-            to {
-                transform: scale(1.04);
-            }
-        }
-
-        /* ═══════════════════════════════════════════════════
-           L2 — LAYERED CINEMATIC OVERLAYS
-           Three overlays stacked. Together they create depth,
-           pull the eye to center, and make white text readable
-           over any video frame — bright or dark.
-        ═══════════════════════════════════════════════════ */
-
-        /* Dark base tint — lifts contrast of everything above */
-        #overlay-base {
-            position: fixed;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-            background: rgba(3, 3, 8, 0.45);
-        }
-
-        /* Radial vignette — creates cinematic depth */
-        #overlay-vignette {
-            position: fixed;
-            inset: 0;
-            z-index: 2;
-            pointer-events: none;
-            background: radial-gradient(ellipse 75% 80% at 50% 50%,
-                    transparent 25%,
-                    rgba(3, 3, 8, 0.65) 100%);
-        }
-
-        /* Bottom gradient — grounds the branding text */
-        #overlay-bottom {
-            position: fixed;
-            inset: 0;
-            z-index: 3;
-            pointer-events: none;
-            background: linear-gradient(to bottom,
-                    rgba(3, 3, 8, 0.40) 0%,
-                    transparent 25%,
-                    transparent 55%,
-                    rgba(3, 3, 8, 0.80) 100%);
-        }
-
-        /* ═══════════════════════════════════════════════════
-           VIBE TINT — colour mood overlay from AI commands
-        ═══════════════════════════════════════════════════ */
-        #vibe-tint {
-            position: fixed;
-            inset: 0;
-            z-index: 4;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 2s var(--ease-s);
-        }
-
-        body.vibe-rain #vibe-tint {
-            background: rgba(0, 26, 52, 0.40);
-            opacity: 1;
-        }
-
-        body.vibe-luxury #vibe-tint {
-            background: rgba(40, 28, 0, 0.45);
-            opacity: 1;
-        }
-
-        body.vibe-adventure #vibe-tint {
-            background: rgba(40, 0, 0, 0.45);
-            opacity: 1;
-        }
-
-        /* ═══════════════════════════════════════════════════
-           L5 — CENTRED HERO BRANDING (GLASSMORPHISM)
-           THE AHMED BRAND. Centred on screen, idle only.
-           Glass card fades out when call starts.
-        ═══════════════════════════════════════════════════ */
-        #hero-brand {
-            position: fixed;
-            inset: 0;
-            z-index: 8;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-            transition: opacity 1s var(--ease), transform 1s var(--ease);
-        }
-
-        body.call-active #hero-brand {
-            opacity: 0;
-            transform: scale(0.97);
-            pointer-events: none;
-        }
-
-        body.guest-mode #hero-brand {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        body.bridge-reconnecting #hero-brand {
-            opacity: 0.3;
-            pointer-events: none;
-        }
-
-        .brand-glass {
-            /* GLASSMORPHISM CARD */
-            background: rgba(5, 5, 10, 0.38);
-            backdrop-filter: blur(var(--blur)) saturate(1.4);
-            -webkit-backdrop-filter: blur(var(--blur)) saturate(1.4);
-            border: 1px solid rgba(212, 175, 55, 0.20);
-            border-radius: 28px;
-            padding: 56px 72px;
-            text-align: center;
-            max-width: 600px;
-            width: 90%;
-            box-shadow:
-                inset 0 1px 0 rgba(212, 175, 55, 0.12),
-                0 32px 80px rgba(0, 0, 0, 0.50),
-                0 0 0 1px rgba(255, 255, 255, 0.04);
-            position: relative;
-        }
-
-        /* Gold corner accents */
-        .brand-glass::before,
-        .brand-glass::after {
-            content: '';
-            position: absolute;
-            width: 36px;
-            height: 36px;
-            border-color: rgba(212, 175, 55, 0.35);
-            border-style: solid;
-        }
-
-        .brand-glass::before {
-            top: 20px;
-            left: 20px;
-            border-width: 1px 0 0 1px;
-        }
-
-        .brand-glass::after {
-            bottom: 20px;
-            right: 20px;
-            border-width: 0 1px 1px 0;
-        }
-
-        /* Brand eyebrow */
-        .brand-eyebrow {
-            font-size: 0.58rem;
-            letter-spacing: 0.55em;
-            text-transform: uppercase;
-            color: var(--gold);
-            margin-bottom: 20px;
-            opacity: 0.85;
-            opacity: 0;
-            animation: fadeUp 1s 0.3s var(--ease) forwards;
-        }
-
-        /* Main title */
-        .brand-title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: clamp(3rem, 7vw, 5.2rem);
-            font-weight: 300;
-            line-height: 1.0;
-            letter-spacing: 0.04em;
-            color: white;
-            margin-bottom: 6px;
-            opacity: 0;
-            animation: fadeUp 1s 0.5s var(--ease) forwards;
-        }
-
-        .brand-title em {
-            font-style: italic;
-            color: var(--gold);
-        }
-
-        /* TM trademark */
-        .brand-tm {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.55rem;
-            letter-spacing: 0.3em;
-            color: rgba(212, 175, 55, 0.55);
-            vertical-align: super;
-            font-weight: 300;
-        }
-
-        /* Thin gold rule */
-        .brand-rule {
-            width: 60px;
-            height: 1px;
-            background: linear-gradient(to right, transparent, var(--gold), transparent);
-            margin: 22px auto;
-            opacity: 0;
-            animation: fadeIn 1s 0.7s ease forwards;
-        }
-
-        .brand-sub {
-            font-size: 0.62rem;
-            letter-spacing: 0.35em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.35);
-            margin-bottom: 36px;
-            opacity: 0;
-            animation: fadeUp 1s 0.75s var(--ease) forwards;
-        }
-
-        /* Touch pulse */
-        .brand-touch {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 14px;
-            opacity: 0;
-            animation: fadeUp 1s 1s var(--ease) forwards;
-        }
-
-        body.bridge-reconnecting .brand-touch {
-            opacity: 0;
-        }
-
-        .touch-ring {
-            width: 46px;
-            height: 46px;
-            border-radius: 50%;
-            border: 1px solid rgba(212, 175, 55, 0.45);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: ringPulse 2.6s var(--ease-s) infinite;
-        }
-
-        .touch-ring-inner {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: rgba(212, 175, 55, 0.10);
-            border: 1px solid rgba(212, 175, 55, 0.60);
-        }
-
-        @keyframes ringPulse {
-
-            0%,
-            100% {
-                box-shadow: 0 0 0 0 var(--gold-glow);
-            }
-
-            55% {
-                box-shadow: 0 0 0 12px rgba(212, 175, 55, 0);
-            }
-        }
-
-        .touch-label {
-            font-size: 0.6rem;
-            letter-spacing: 0.32em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.35);
-        }
-
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(14px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        /* ═══════════════════════════════════════════════════
-           L6 — RECONNECTING BANNER (top slide-down)
-        ═══════════════════════════════════════════════════ */
-        #reconnect-banner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 25;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 12px 24px;
-            background: rgba(40, 18, 0, 0.90);
-            border-bottom: 1px solid rgba(251, 146, 60, 0.25);
-            backdrop-filter: blur(14px);
-            transform: translateY(-100%);
-            transition: transform 0.55s var(--ease);
-        }
-
-        body.bridge-reconnecting #reconnect-banner {
-            transform: translateY(0);
-        }
-
-        .banner-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #fb923c;
-            flex-shrink: 0;
-            animation: dotPulse 1.4s ease infinite;
-        }
-
-        #reconnect-banner span {
-            font-size: 0.6rem;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            color: rgba(253, 186, 116, 0.80);
-        }
-
-        /* ═══════════════════════════════════════════════════
-           L6 — AI STATE HUD (top-right pill)
-        ═══════════════════════════════════════════════════ */
-        #ai-hud {
-            position: fixed;
-            top: 24px;
-            right: 24px;
-            z-index: 20;
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            background: rgba(5, 5, 10, 0.75);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 30px;
-            padding: 9px 18px;
-            backdrop-filter: blur(16px);
-            transition: right 0.5s var(--ease), border-color 0.5s ease, box-shadow 0.5s ease;
-        }
-
-        body.pass-open #ai-hud {
-            right: calc(330px + 24px);
-        }
-
-        body.bridge-reconnecting #ai-hud {
-            border-color: rgba(251, 146, 60, 0.35);
-            box-shadow: 0 0 18px rgba(251, 146, 60, 0.12);
-        }
-
-        #ai-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            flex-shrink: 0;
-            transition: background 0.4s ease, box-shadow 0.4s ease;
-        }
-
-        #ai-label {
-            font-size: 0.6rem;
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.30);
-            transition: color 0.4s ease;
-            white-space: nowrap;
-        }
-
-        #ai-hud.s-idle #ai-dot {
-            background: rgba(255, 255, 255, 0.22);
-        }
-
-        #ai-hud.s-idle #ai-label {
-            color: rgba(255, 255, 255, 0.30);
-        }
-
-        #ai-hud.s-listening #ai-dot {
-            background: #4ade80;
-            box-shadow: 0 0 10px #4ade80;
-            animation: dotPulse 1s ease infinite;
-        }
-
-        #ai-hud.s-listening #ai-label {
-            color: #4ade80;
-        }
-
-        #ai-hud.s-thinking #ai-dot {
-            background: var(--gold);
-            box-shadow: 0 0 10px var(--gold);
-            animation: dotPulse 0.7s ease infinite;
-        }
-
-        #ai-hud.s-thinking #ai-label {
-            color: #F0D060;
-        }
-
-        #ai-hud.s-speaking #ai-dot {
-            background: #a78bfa;
-            box-shadow: 0 0 10px #a78bfa;
-            animation: dotPulse 0.45s ease infinite;
-        }
-
-        #ai-hud.s-speaking #ai-label {
-            color: #c4b5fd;
-        }
-
-        #ai-hud.s-executing #ai-dot {
-            background: #60a5fa;
-            box-shadow: 0 0 10px #60a5fa;
-            animation: dotSpin 0.55s linear infinite;
-        }
-
-        #ai-hud.s-executing #ai-label {
-            color: #93c5fd;
-        }
-
-        #ai-hud.s-reconnecting #ai-dot {
-            background: #fb923c;
-            box-shadow: 0 0 12px rgba(251, 146, 60, 0.7);
-            animation: dotPulse 1.6s ease infinite;
-        }
-
-        #ai-hud.s-reconnecting #ai-label {
-            color: #fdba74;
-        }
-
-        #ai-hud.s-guest #ai-dot {
-            background: #fb923c;
-            box-shadow: 0 0 8px rgba(251, 146, 60, 0.5);
-            animation: dotPulse 2.4s ease infinite;
-        }
-
-        #ai-hud.s-guest #ai-label {
-            color: #fdba74;
-        }
-
-        @keyframes dotPulse {
-
-            0%,
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-
-            50% {
-                transform: scale(1.65);
-                opacity: 0.5;
-            }
-        }
-
-        @keyframes dotSpin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* ═══════════════════════════════════════════════════
-           L7 — SESSION BAR (visible only during active call)
-        ═══════════════════════════════════════════════════ */
-        #session-bar {
-            position: fixed;
-            bottom: 36px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            background: rgba(5, 5, 10, 0.65);
-            border: 1px solid rgba(212, 175, 55, 0.18);
-            border-radius: 60px;
-            padding: 14px 28px;
-            backdrop-filter: blur(var(--blur));
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
-        }
-
-        body.call-active #session-bar {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-            pointer-events: auto;
-        }
-
-        #waveform {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            height: 22px;
-        }
-
-        #waveform span {
-            display: block;
-            width: 3px;
-            border-radius: 2px;
-            background: var(--gold);
-            height: 5px;
-        }
-
-        #waveform span:nth-child(1) {
-            animation: wave 1.3s 0.00s ease-in-out infinite;
-        }
-
-        #waveform span:nth-child(2) {
-            animation: wave 1.3s 0.15s ease-in-out infinite;
-        }
-
-        #waveform span:nth-child(3) {
-            animation: wave 1.3s 0.30s ease-in-out infinite;
-        }
-
-        #waveform span:nth-child(4) {
-            animation: wave 1.3s 0.45s ease-in-out infinite;
-        }
-
-        #waveform span:nth-child(5) {
-            animation: wave 1.3s 0.60s ease-in-out infinite;
-        }
-
-        @keyframes wave {
-
-            0%,
-            100% {
-                height: 4px;
-                opacity: 0.35;
-            }
-
-            50% {
-                height: 18px;
-                opacity: 1;
-            }
-        }
-
-        body.st-listening #waveform span {
-            animation-duration: 0.7s;
-        }
-
-        body.st-speaking #waveform span {
-            animation-duration: 0.45s;
-        }
-
-        body.st-thinking #waveform span {
-            opacity: 0.2 !important;
-            height: 4px !important;
-            animation: none;
-        }
-
-        #session-label {
-            font-size: 0.62rem;
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.40);
-            white-space: nowrap;
-        }
-
-        #end-btn {
-            padding: 9px 22px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.58rem;
-            font-weight: 700;
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-            background: rgba(255, 65, 43, 0.10);
-            color: rgba(255, 100, 80, 0.90);
-            border: 1px solid rgba(255, 65, 43, 0.30);
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        #end-btn:hover {
-            background: rgba(255, 65, 43, 0.22);
-            box-shadow: 0 0 18px rgba(255, 65, 43, 0.2);
-        }
-
-        /* ═══════════════════════════════════════════════════
-           L8 — THE PASS (QR hand-off from bottom-right)
-        ═══════════════════════════════════════════════════ */
-        #the-pass {
-            position: fixed;
-            bottom: 48px;
-            right: 52px;
-            z-index: 12;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 12px;
-            transform: translateY(120%) translateX(20px);
-            opacity: 0;
-            pointer-events: none;
-            transition: transform 1s var(--ease), opacity 0.8s var(--ease);
-        }
-
-        #the-pass.open {
-            transform: translateY(0) translateX(0);
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .pass-label {
-            font-size: 0.58rem;
-            letter-spacing: 0.35em;
-            text-transform: uppercase;
-            color: rgba(212, 175, 55, 0.60);
-            text-align: right;
-        }
-
-        .pass-card {
-            background: rgba(255, 255, 255, 0.97);
-            border-radius: 18px;
-            padding: 20px 22px;
-            text-align: center;
-            box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(212, 175, 55, 0.35), 0 0 40px rgba(212, 175, 55, 0.10);
-            animation: passReveal 0.9s var(--ease) both;
-        }
-
-        @keyframes passReveal {
-            from {
-                transform: scale(0.90) rotate(-1.5deg);
-                filter: blur(4px);
-                opacity: 0;
-            }
-
-            to {
-                transform: scale(1) rotate(0deg);
-                filter: blur(0);
-                opacity: 1;
-            }
-        }
-
-        .pass-card h3 {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.15rem;
-            font-weight: 600;
-            color: #111;
-            margin-bottom: 14px;
-            letter-spacing: 0.04em;
-        }
-
-        .pass-card img {
-            display: block;
-            border-radius: 8px;
-        }
-
-        .pass-card-sub {
-            font-size: 0.6rem;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: #555;
-            margin-top: 12px;
-        }
-
-        .pass-dismiss {
-            font-size: 0.56rem;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.25);
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px 0;
-            transition: color 0.3s ease;
-        }
-
-        .pass-dismiss:hover {
-            color: rgba(255, 255, 255, 0.60);
-        }
-
-        /* ═══════════════════════════════════════════════════
-           GUEST MODE OVERLAY
-        ═══════════════════════════════════════════════════ */
-        #guest-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 9;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.8s var(--ease);
-        }
-
-        body.guest-mode #guest-overlay {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .guest-card {
-            background: rgba(5, 5, 10, 0.60);
-            border: 1px solid rgba(212, 175, 55, 0.20);
-            border-radius: 24px;
-            padding: 40px 52px;
-            backdrop-filter: blur(var(--blur));
-            text-align: center;
-            max-width: 440px;
-            position: relative;
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.50), inset 0 1px 0 rgba(212, 175, 55, 0.10);
-        }
-
-        .guest-card::before,
-        .guest-card::after {
-            content: '';
-            position: absolute;
-            width: 28px;
-            height: 28px;
-            border-color: rgba(212, 175, 55, 0.3);
-            border-style: solid;
-        }
-
-        .guest-card::before {
-            top: 16px;
-            left: 16px;
-            border-width: 1px 0 0 1px;
-        }
-
-        .guest-card::after {
-            bottom: 16px;
-            right: 16px;
-            border-width: 0 1px 1px 0;
-        }
-
-        .guest-eyebrow {
-            font-size: 0.56rem;
-            letter-spacing: 0.5em;
-            text-transform: uppercase;
-            color: rgba(251, 146, 60, 0.80);
-            margin-bottom: 10px;
-        }
-
-        .guest-title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.9rem;
-            font-weight: 300;
-            letter-spacing: 0.06em;
-            color: white;
-            margin-bottom: 10px;
-        }
-
-        .guest-body {
-            font-size: 0.62rem;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.28);
-            line-height: 2.2;
-            margin-bottom: 28px;
-        }
-
-        #reconnect-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 15px 44px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.66rem;
-            font-weight: 700;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            background: transparent;
-            color: var(--gold);
-            border: 1px solid rgba(212, 175, 55, 0.45);
-            border-radius: 50px;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.35s ease;
-        }
-
-        #reconnect-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, var(--gold), #b8941f);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.4s var(--ease);
-            z-index: -1;
-        }
-
-        #reconnect-btn:hover {
-            color: #000;
-            box-shadow: 0 0 32px var(--gold-glow);
-        }
-
-        #reconnect-btn:hover::before {
-            transform: scaleX(1);
-        }
-
-        #reconnect-btn:disabled {
-            opacity: 0.35;
-            cursor: not-allowed;
-        }
-
-        .reconnect-spinner {
-            display: none;
-            width: 13px;
-            height: 13px;
-            border-radius: 50%;
-            border: 2px solid rgba(0, 0, 0, 0.2);
-            border-top-color: currentColor;
-            animation: spin 0.65s linear infinite;
-        }
-
-        #reconnect-btn.retrying .reconnect-spinner {
-            display: block;
-        }
-
-        #reconnect-btn.retrying .reconnect-text {
-            opacity: 0.65;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* ═══════════════════════════════════════════════════
-           TAP ZONE — full screen, idle only
-        ═══════════════════════════════════════════════════ */
-        #tap-zone {
-            position: fixed;
-            inset: 0;
-            z-index: 7;
-            cursor: pointer;
-        }
-
-        body.call-active #tap-zone {
-            pointer-events: none;
-        }
-
-        body.guest-mode #tap-zone {
-            pointer-events: none;
-        }
-
-        body.bridge-reconnecting #tap-zone {
-            pointer-events: none;
-        }
-
-        /* ═══════════════════════════════════════════════════
-           BOTTOM SIGNATURE LINE
-        ═══════════════════════════════════════════════════ */
-        #signature {
-            position: fixed;
-            bottom: 20px;
-            left: 0;
-            right: 0;
-            text-align: center;
-            z-index: 6;
-            pointer-events: none;
-            opacity: 0;
-            animation: fadeIn 1.5s 1.4s ease forwards;
-            transition: opacity 0.8s ease;
-        }
-
-        body.call-active #signature {
-            opacity: 0;
-        }
-
-        #signature span {
-            font-size: 0.5rem;
-            letter-spacing: 0.5em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.18);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#050505">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>Travel Expert ™ | The AI Concierge</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@200;300;400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #D4AF37; --gold-glow: rgba(212, 175, 55, 0.40); --gold-dim: rgba(212, 175, 55, 0.14);
+      --black: #050505; --glass: rgba(5, 5, 5, 0.52); --glass-border: rgba(212, 175, 55, 0.18);
+      --blur: 24px; --ease: cubic-bezier(0.16, 1, 0.3, 1); --ease-s: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #050505; font-family: 'Montserrat', sans-serif; color: white; }
+    #bg-video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center center; z-index: 0; animation: videoBreath 20s var(--ease-s) infinite alternate; }
+    @keyframes videoBreath { from { transform: scale(1.00); } to { transform: scale(1.04); } }
+    #overlay-base { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: rgba(3, 3, 8, 0.45); }
+    #overlay-vignette { position: fixed; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse 75% 80% at 50% 50%, transparent 25%, rgba(3, 3, 8, 0.65) 100%); }
+    #overlay-bottom { position: fixed; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(to bottom, rgba(3, 3, 8, 0.40) 0%, transparent 25%, transparent 55%, rgba(3, 3, 8, 0.80) 100%); }
+    #vibe-tint { position: fixed; inset: 0; z-index: 4; pointer-events: none; opacity: 0; transition: opacity 2s var(--ease-s); }
+    body.vibe-rain #vibe-tint { background: rgba(0, 26, 52, 0.40); opacity: 1; }
+    body.vibe-luxury #vibe-tint { background: rgba(40, 28, 0, 0.45); opacity: 1; }
+    body.vibe-adventure #vibe-tint { background: rgba(40, 0, 0, 0.45); opacity: 1; }
+    #hero-brand { position: fixed; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center; pointer-events: none; transition: opacity 1s var(--ease), transform 1s var(--ease); }
+    body.call-active #hero-brand { opacity: 0; transform: scale(0.97); pointer-events: none; }
+    body.guest-mode #hero-brand { opacity: 0; pointer-events: none; }
+    body.bridge-reconnecting #hero-brand { opacity: 0.3; pointer-events: none; }
+    .brand-glass { background: rgba(5, 5, 10, 0.38); backdrop-filter: blur(var(--blur)) saturate(1.4); -webkit-backdrop-filter: blur(var(--blur)) saturate(1.4); border: 1px solid rgba(212, 175, 55, 0.20); border-radius: 28px; padding: 56px 72px; text-align: center; max-width: 600px; width: 90%; box-shadow: inset 0 1px 0 rgba(212, 175, 55, 0.12), 0 32px 80px rgba(0, 0, 0, 0.50), 0 0 0 1px rgba(255, 255, 255, 0.04); position: relative; }
+    .brand-glass::before, .brand-glass::after { content: ''; position: absolute; width: 36px; height: 36px; border-color: rgba(212, 175, 55, 0.35); border-style: solid; }
+    .brand-glass::before { top: 20px; left: 20px; border-width: 1px 0 0 1px; }
+    .brand-glass::after { bottom: 20px; right: 20px; border-width: 0 1px 1px 0; }
+    .brand-eyebrow { font-size: 0.58rem; letter-spacing: 0.55em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; opacity: 0; animation: fadeUp 1s 0.3s var(--ease) forwards; }
+    .brand-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(3rem, 7vw, 5.2rem); font-weight: 300; line-height: 1.0; letter-spacing: 0.04em; color: white; margin-bottom: 6px; opacity: 0; animation: fadeUp 1s 0.5s var(--ease) forwards; }
+    .brand-title em { font-style: italic; color: var(--gold); }
+    .brand-tm { font-family: 'Montserrat', sans-serif; font-size: 0.55rem; letter-spacing: 0.3em; color: rgba(212, 175, 55, 0.55); vertical-align: super; font-weight: 300; }
+    .brand-rule { width: 60px; height: 1px; background: linear-gradient(to right, transparent, var(--gold), transparent); margin: 22px auto; opacity: 0; animation: fadeIn 1s 0.7s ease forwards; }
+    .brand-sub { font-size: 0.62rem; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(255, 255, 255, 0.35); margin-bottom: 36px; opacity: 0; animation: fadeUp 1s 0.75s var(--ease) forwards; }
+    .brand-touch { display: flex; align-items: center; justify-content: center; gap: 14px; opacity: 0; animation: fadeUp 1s 1s var(--ease) forwards; }
+    body.bridge-reconnecting .brand-touch { opacity: 0; }
+    .touch-ring { width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(212, 175, 55, 0.45); display: flex; align-items: center; justify-content: center; animation: ringPulse 2.6s var(--ease-s) infinite; }
+    .touch-ring-inner { width: 28px; height: 28px; border-radius: 50%; background: rgba(212, 175, 55, 0.10); border: 1px solid rgba(212, 175, 55, 0.60); }
+    @keyframes ringPulse { 0%, 100% { box-shadow: 0 0 0 0 var(--gold-glow); } 55% { box-shadow: 0 0 0 12px rgba(212, 175, 55, 0); } }
+    .touch-label { font-size: 0.6rem; letter-spacing: 0.32em; text-transform: uppercase; color: rgba(255, 255, 255, 0.35); }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    #reconnect-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 25; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 24px; background: rgba(40, 18, 0, 0.90); border-bottom: 1px solid rgba(251, 146, 60, 0.25); backdrop-filter: blur(14px); transform: translateY(-100%); transition: transform 0.55s var(--ease); }
+    body.bridge-reconnecting #reconnect-banner { transform: translateY(0); }
+    .banner-dot { width: 7px; height: 7px; border-radius: 50%; background: #fb923c; flex-shrink: 0; animation: dotPulse 1.4s ease infinite; }
+    #reconnect-banner span { font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(253, 186, 116, 0.80); }
+    #ai-hud { position: fixed; top: 24px; right: 24px; z-index: 20; display: flex; align-items: center; gap: 9px; background: rgba(5, 5, 10, 0.75); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 30px; padding: 9px 18px; backdrop-filter: blur(16px); transition: right 0.5s var(--ease), border-color 0.5s ease, box-shadow 0.5s ease; }
+    body.pass-open #ai-hud { right: calc(330px + 24px); }
+    body.bridge-reconnecting #ai-hud { border-color: rgba(251, 146, 60, 0.35); box-shadow: 0 0 18px rgba(251, 146, 60, 0.12); }
+    #ai-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); flex-shrink: 0; transition: background 0.4s ease, box-shadow 0.4s ease; }
+    #ai-label { font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255, 255, 255, 0.30); transition: color 0.4s ease; white-space: nowrap; }
+    #ai-hud.s-idle #ai-dot { background: rgba(255, 255, 255, 0.22); } #ai-hud.s-idle #ai-label { color: rgba(255, 255, 255, 0.30); }
+    #ai-hud.s-listening #ai-dot { background: #4ade80; box-shadow: 0 0 10px #4ade80; animation: dotPulse 1s ease infinite; } #ai-hud.s-listening #ai-label { color: #4ade80; }
+    #ai-hud.s-thinking #ai-dot { background: var(--gold); box-shadow: 0 0 10px var(--gold); animation: dotPulse 0.7s ease infinite; } #ai-hud.s-thinking #ai-label { color: #F0D060; }
+    #ai-hud.s-speaking #ai-dot { background: #a78bfa; box-shadow: 0 0 10px #a78bfa; animation: dotPulse 0.45s ease infinite; } #ai-hud.s-speaking #ai-label { color: #c4b5fd; }
+    #ai-hud.s-executing #ai-dot { background: #60a5fa; box-shadow: 0 0 10px #60a5fa; animation: dotSpin 0.55s linear infinite; } #ai-hud.s-executing #ai-label { color: #93c5fd; }
+    #ai-hud.s-reconnecting #ai-dot { background: #fb923c; box-shadow: 0 0 12px rgba(251, 146, 60, 0.7); animation: dotPulse 1.6s ease infinite; } #ai-hud.s-reconnecting #ai-label { color: #fdba74; }
+    #ai-hud.s-guest #ai-dot { background: #fb923c; box-shadow: 0 0 8px rgba(251, 146, 60, 0.5); animation: dotPulse 2.4s ease infinite; } #ai-hud.s-guest #ai-label { color: #fdba74; }
+    @keyframes dotPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.65); opacity: 0.5; } }
+    @keyframes dotSpin { to { transform: rotate(360deg); } }
+    #session-bar { position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%) translateY(20px); z-index: 10; display: flex; align-items: center; gap: 20px; background: rgba(5, 5, 10, 0.65); border: 1px solid rgba(212, 175, 55, 0.18); border-radius: 60px; padding: 14px 28px; backdrop-filter: blur(var(--blur)); opacity: 0; pointer-events: none; transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+    body.call-active #session-bar { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    #waveform { display: flex; align-items: center; gap: 3px; height: 22px; }
+    #waveform span { display: block; width: 3px; border-radius: 2px; background: var(--gold); height: 5px; }
+    #waveform span:nth-child(1) { animation: wave 1.3s 0.00s ease-in-out infinite; }
+    #waveform span:nth-child(2) { animation: wave 1.3s 0.15s ease-in-out infinite; }
+    #waveform span:nth-child(3) { animation: wave 1.3s 0.30s ease-in-out infinite; }
+    #waveform span:nth-child(4) { animation: wave 1.3s 0.45s ease-in-out infinite; }
+    #waveform span:nth-child(5) { animation: wave 1.3s 0.60s ease-in-out infinite; }
+    @keyframes wave { 0%, 100% { height: 4px; opacity: 0.35; } 50% { height: 18px; opacity: 1; } }
+    body.st-listening #waveform span { animation-duration: 0.7s; }
+    body.st-speaking #waveform span { animation-duration: 0.45s; }
+    body.st-thinking #waveform span { opacity: 0.2 !important; height: 4px !important; animation: none; }
+    #session-label { font-size: 0.62rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255, 255, 255, 0.40); white-space: nowrap; }
+    #end-btn { padding: 9px 22px; font-family: 'Montserrat', sans-serif; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; background: rgba(255, 65, 43, 0.10); color: rgba(255, 100, 80, 0.90); border: 1px solid rgba(255, 65, 43, 0.30); border-radius: 30px; cursor: pointer; transition: all 0.3s ease; }
+    #end-btn:hover { background: rgba(255, 65, 43, 0.22); box-shadow: 0 0 18px rgba(255, 65, 43, 0.2); }
+    #the-pass { position: fixed; bottom: 48px; right: 52px; z-index: 12; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; transform: translateY(120%) translateX(20px); opacity: 0; pointer-events: none; transition: transform 1s var(--ease), opacity 0.8s var(--ease); }
+    #the-pass.open { transform: translateY(0) translateX(0); opacity: 1; pointer-events: auto; }
+    .pass-label { font-size: 0.58rem; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(212, 175, 55, 0.60); text-align: right; }
+    .pass-card { background: rgba(255, 255, 255, 0.97); border-radius: 18px; padding: 20px 22px; text-align: center; box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(212, 175, 55, 0.35), 0 0 40px rgba(212, 175, 55, 0.10); animation: passReveal 0.9s var(--ease) both; }
+    @keyframes passReveal { from { transform: scale(0.90) rotate(-1.5deg); filter: blur(4px); opacity: 0; } to { transform: scale(1) rotate(0deg); filter: blur(0); opacity: 1; } }
+    .pass-card h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; font-weight: 600; color: #111; margin-bottom: 14px; letter-spacing: 0.04em; }
+    .pass-card img { display: block; border-radius: 8px; }
+    .pass-card-sub { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: #555; margin-top: 12px; }
+    .pass-dismiss { font-size: 0.56rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(255, 255, 255, 0.25); background: none; border: none; cursor: pointer; padding: 4px 0; transition: color 0.3s ease; }
+    .pass-dismiss:hover { color: rgba(255, 255, 255, 0.60); }
+    #guest-overlay { position: fixed; inset: 0; z-index: 9; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 0.8s var(--ease); }
+    body.guest-mode #guest-overlay { opacity: 1; pointer-events: auto; }
+    .guest-card { background: rgba(5, 5, 10, 0.60); border: 1px solid rgba(212, 175, 55, 0.20); border-radius: 24px; padding: 40px 52px; backdrop-filter: blur(var(--blur)); text-align: center; max-width: 440px; position: relative; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.50), inset 0 1px 0 rgba(212, 175, 55, 0.10); }
+    .guest-card::before, .guest-card::after { content: ''; position: absolute; width: 28px; height: 28px; border-color: rgba(212, 175, 55, 0.3); border-style: solid; }
+    .guest-card::before { top: 16px; left: 16px; border-width: 1px 0 0 1px; }
+    .guest-card::after { bottom: 16px; right: 16px; border-width: 0 1px 1px 0; }
+    .guest-eyebrow { font-size: 0.56rem; letter-spacing: 0.5em; text-transform: uppercase; color: rgba(251, 146, 60, 0.80); margin-bottom: 10px; }
+    .guest-title { font-family: 'Cormorant Garamond', serif; font-size: 1.9rem; font-weight: 300; letter-spacing: 0.06em; color: white; margin-bottom: 10px; }
+    .guest-body { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255, 255, 255, 0.28); line-height: 2.2; margin-bottom: 28px; }
+    #reconnect-btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 44px; font-family: 'Montserrat', sans-serif; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; background: transparent; color: var(--gold); border: 1px solid rgba(212, 175, 55, 0.45); border-radius: 50px; cursor: pointer; position: relative; overflow: hidden; transition: all 0.35s ease; }
+    #reconnect-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, var(--gold), #b8941f); transform: scaleX(0); transform-origin: left; transition: transform 0.4s var(--ease); z-index: -1; }
+    #reconnect-btn:hover { color: #000; box-shadow: 0 0 32px var(--gold-glow); }
+    #reconnect-btn:hover::before { transform: scaleX(1); }
+    #reconnect-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .reconnect-spinner { display: none; width: 13px; height: 13px; border-radius: 50%; border: 2px solid rgba(0, 0, 0, 0.2); border-top-color: currentColor; animation: spin 0.65s linear infinite; }
+    #reconnect-btn.retrying .reconnect-spinner { display: block; }
+    #reconnect-btn.retrying .reconnect-text { opacity: 0.65; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #tap-zone { position: fixed; inset: 0; z-index: 7; cursor: pointer; }
+    body.call-active #tap-zone { pointer-events: none; }
+    body.guest-mode #tap-zone { pointer-events: none; }
+    body.bridge-reconnecting #tap-zone { pointer-events: none; }
+    #signature { position: fixed; bottom: 20px; left: 0; right: 0; text-align: center; z-index: 6; pointer-events: none; opacity: 0; animation: fadeIn 1.5s 1.4s ease forwards; transition: opacity 0.8s ease; }
+    body.call-active #signature { opacity: 0; }
+    #signature span { font-size: 0.5rem; letter-spacing: 0.5em; text-transform: uppercase; color: rgba(255, 255, 255, 0.18); }
+  </style>
 </head>
-
 <body>
-
-    <!-- ══════════════════════════════════════════════
-         L1: CINEMATIC BACKGROUND VIDEO
-
-         Source:  Mixkit — "Dubai Burj Khalifa Tower Time Lapse"
-         License: Free, royalty-free · mixkit.co/license
-         CDN:     assets.mixkit.co (direct, no auth required)
-
-         720p primary → 360p fallback.
-         muted + playsinline = required for iOS autoplay.
-    ══════════════════════════════════════════════ -->
-    <video id="bg-video" autoplay loop muted playsinline preload="auto" crossorigin="anonymous">
-        <source src="https://assets.mixkit.co/videos/20109/20109-720.mp4" type="video/mp4">
-        <source src="https://assets.mixkit.co/videos/20109/20109-360.mp4" type="video/mp4">
-    </video>
-
-    <div id="overlay-base"></div>
-    <div id="overlay-vignette"></div>
-    <div id="overlay-bottom"></div>
-    <div id="vibe-tint"></div>
-
-    <!-- RECONNECTING BANNER -->
-    <div id="reconnect-banner">
-        <div class="banner-dot"></div>
-        <span>Reconnecting to Bridge...</span>
+  <video id="bg-video" autoplay loop muted playsinline preload="auto" crossorigin="anonymous">
+    <source src="https://assets.mixkit.co/videos/20109/20109-720.mp4" type="video/mp4">
+    <source src="https://assets.mixkit.co/videos/20109/20109-360.mp4" type="video/mp4">
+  </video>
+  <div id="overlay-base"></div>
+  <div id="overlay-vignette"></div>
+  <div id="overlay-bottom"></div>
+  <div id="vibe-tint"></div>
+  <div id="reconnect-banner"><div class="banner-dot"></div><span>Reconnecting to Bridge...</span></div>
+  <div id="ai-hud" class="s-idle"><div id="ai-dot"></div><span id="ai-label">Loading...</span></div>
+  <div id="hero-brand">
+    <div class="brand-glass">
+      <p class="brand-eyebrow">Dubai's Premier AI Concierge</p>
+      <h1 class="brand-title">Your <em>Travel</em><br>Expert<span class="brand-tm"> ™</span></h1>
+      <div class="brand-rule"></div>
+      <p class="brand-sub">Powered by Artificial Intelligence</p>
+      <div class="brand-touch">
+        <div class="touch-ring"><div class="touch-ring-inner"></div></div>
+        <span class="touch-label">Touch Anywhere to Begin</span>
+      </div>
     </div>
-
-    <!-- AI HUD -->
-    <div id="ai-hud" class="s-idle">
-        <div id="ai-dot"></div>
-        <span id="ai-label">Loading...</span>
+  </div>
+  <div id="guest-overlay">
+    <div class="guest-card">
+      <p class="guest-eyebrow">Guest Mode Active</p>
+      <h2 class="guest-title">Voice Unavailable</h2>
+      <p class="guest-body">The voice engine could not be loaded.<br>Network or firewall restriction detected.<br>Please ask a team member for assistance.</p>
+      <button id="reconnect-btn"><div class="reconnect-spinner"></div><span class="reconnect-text">Manual Reconnect</span></button>
     </div>
-
-    <!-- CENTRED GLASSMORPHISM BRAND CARD -->
-    <div id="hero-brand">
-        <div class="brand-glass">
-            <p class="brand-eyebrow">Dubai's Premier AI Concierge</p>
-            <h1 class="brand-title">
-                Your <em>Travel</em><br>Expert<span class="brand-tm"> ™</span>
-            </h1>
-            <div class="brand-rule"></div>
-            <p class="brand-sub">Powered by Artificial Intelligence</p>
-            <div class="brand-touch">
-                <div class="touch-ring">
-                    <div class="touch-ring-inner"></div>
-                </div>
-                <span class="touch-label">Touch Anywhere to Begin</span>
-            </div>
-        </div>
+  </div>
+  <div id="session-bar">
+    <div id="waveform"><span></span><span></span><span></span><span></span><span></span></div>
+    <span id="session-label">Connecting...</span>
+    <button id="end-btn">End Session</button>
+  </div>
+  <div id="the-pass">
+    <span class="pass-label">Your Concierge Has Prepared</span>
+    <div class="pass-card">
+      <h3 id="pass-tour-name">Experience Details</h3>
+      <img id="pass-qr-img" src="" alt="Scan to Book" width="220" height="220">
+      <p class="pass-card-sub">Scan with your phone to book</p>
     </div>
+    <button class="pass-dismiss" id="pass-dismiss">Dismiss ✕</button>
+  </div>
+  <div id="tap-zone"></div>
+  <div id="signature"><span>Luxury Travel · Storytelling · AI-Optimized Experiences ™</span></div>
 
-    <!-- GUEST MODE OVERLAY -->
-    <div id="guest-overlay">
-        <div class="guest-card">
-            <p class="guest-eyebrow">Guest Mode Active</p>
-            <h2 class="guest-title">Voice Unavailable</h2>
-            <p class="guest-body">
-                The voice engine could not be loaded.<br>
-                Network or firewall restriction detected.<br>
-                Please ask a team member for assistance.
-            </p>
-            <button id="reconnect-btn">
-                <div class="reconnect-spinner"></div>
-                <span class="reconnect-text">Manual Reconnect</span>
-            </button>
-        </div>
-    </div>
+  <script type="module">
+    import Vapi from "https://esm.sh/@vapi-ai/web@2.5.2";
+    window.Vapi = Vapi.default || Vapi;
+  </script>
 
-    <!-- SESSION BAR (active call) -->
-    <div id="session-bar">
-        <div id="waveform">
-            <span></span><span></span><span></span><span></span><span></span>
-        </div>
-        <span id="session-label">Connecting...</span>
-        <button id="end-btn">End Session</button>
-    </div>
+  <script>
+    const RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
+    const VAPI_PUBLIC_KEY   = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
+    const ASSISTANT_ID      = "fcb09257-e877-494d-a7c9-d3a152da0059";
 
-    <!-- THE PASS (QR) -->
-    <div id="the-pass">
-        <span class="pass-label">Your Concierge Has Prepared</span>
-        <div class="pass-card">
-            <h3 id="pass-tour-name">Experience Details</h3>
-            <img id="pass-qr-img" src="" alt="Scan to Book" width="220" height="220">
-            <p class="pass-card-sub">Scan with your phone to book</p>
-        </div>
-        <button class="pass-dismiss" id="pass-dismiss">Dismiss ✕</button>
-    </div>
+    const tapZone      = document.getElementById('tap-zone');
+    const sessionLabel = document.getElementById('session-label');
+    const endBtn       = document.getElementById('end-btn');
+    const thePass      = document.getElementById('the-pass');
+    const passTourName = document.getElementById('pass-tour-name');
+    const passQrImg    = document.getElementById('pass-qr-img');
+    const passDismiss  = document.getElementById('pass-dismiss');
+    const aiHud        = document.getElementById('ai-hud');
+    const aiLabel      = document.getElementById('ai-label');
+    const reconnectBtn = document.getElementById('reconnect-btn');
 
-    <!-- TAP ZONE -->
-    <div id="tap-zone"></div>
+    const HUD_MAP = {
+      idle:         { cls: 's-idle',         lbl: 'System Online' },
+      listening:    { cls: 's-listening',    lbl: 'Listening...' },
+      thinking:     { cls: 's-thinking',     lbl: 'Thinking...' },
+      speaking:     { cls: 's-speaking',     lbl: 'Speaking...' },
+      executing:    { cls: 's-executing',    lbl: 'Preparing...' },
+      reconnecting: { cls: 's-reconnecting', lbl: 'Reconnecting to Bridge...' },
+      guest:        { cls: 's-guest',        lbl: 'Guest Mode' },
+    };
 
-    <!-- BOTTOM SIGNATURE -->
-    <div id="signature">
-        <span>Luxury Travel · Storytelling · AI-Optimized Experiences ™</span>
-    </div>
+    function setAIState(key) {
+      const s = HUD_MAP[key] || HUD_MAP.idle;
+      aiHud.className = s.cls;
+      aiLabel.textContent = s.lbl;
+      document.body.classList.remove('st-listening', 'st-speaking', 'st-thinking');
+      if (key === 'listening') document.body.classList.add('st-listening');
+      if (key === 'speaking')  document.body.classList.add('st-speaking');
+      if (key === 'thinking')  document.body.classList.add('st-thinking');
+      const bar = { listening: 'Listening to You...', thinking: 'Thinking...', speaking: 'Your Agent is Speaking', executing: 'Preparing Your Info...', idle: 'Connected' };
+      if (bar[key]) sessionLabel.textContent = bar[key];
+    }
 
-    <script type="module">
-        import Vapi from "https://esm.sh/@vapi-ai/web@2.5.2";
-        window.Vapi = Vapi.default || Vapi;
-    </script>
+    function setVibe(v) {
+      document.body.classList.remove('vibe-rain', 'vibe-luxury', 'vibe-adventure');
+      if (v) document.body.classList.add('vibe-' + v);
+    }
 
-    <script>
-        const RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
-        const VAPI_PUBLIC_KEY = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
-        const ASSISTANT_ID = "fcb09257-e877-494d-a7c9-d3a152da0059";
+    function openPass(name, url) {
+      passTourName.textContent = name || 'Your Experience';
+      passQrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
+      thePass.classList.add('open');
+      document.body.classList.add('pass-open');
+    }
 
-        const tapZone = document.getElementById('tap-zone');
-        const sessionLabel = document.getElementById('session-label');
-        const endBtn = document.getElementById('end-btn');
-        const thePass = document.getElementById('the-pass');
-        const passTourName = document.getElementById('pass-tour-name');
-        const passQrImg = document.getElementById('pass-qr-img');
-        const passDismiss = document.getElementById('pass-dismiss');
-        const aiHud = document.getElementById('ai-hud');
-        const aiLabel = document.getElementById('ai-label');
-        const reconnectBtn = document.getElementById('reconnect-btn');
+    function closePass() {
+      thePass.classList.remove('open');
+      document.body.classList.remove('pass-open');
+    }
 
-        /* ── AI state ── */
-        const HUD_MAP = {
-            idle: { cls: 's-idle', lbl: 'System Online' },
-            listening: { cls: 's-listening', lbl: 'Listening...' },
-            thinking: { cls: 's-thinking', lbl: 'Thinking...' },
-            speaking: { cls: 's-speaking', lbl: 'Speaking...' },
-            executing: { cls: 's-executing', lbl: 'Preparing...' },
-            reconnecting: { cls: 's-reconnecting', lbl: 'Reconnecting to Bridge...' },
-            guest: { cls: 's-guest', lbl: 'Guest Mode' },
-        };
-        function setAIState(key) {
-            const s = HUD_MAP[key] || HUD_MAP.idle;
-            aiHud.className = s.cls;
-            aiLabel.textContent = s.lbl;
-            document.body.classList.remove('st-listening', 'st-speaking', 'st-thinking');
-            if (key === 'listening') document.body.classList.add('st-listening');
-            if (key === 'speaking') document.body.classList.add('st-speaking');
-            if (key === 'thinking') document.body.classList.add('st-thinking');
-            const bar = {
-                listening: 'Listening to You...', thinking: 'Thinking...',
-                speaking: 'Your Agent is Speaking', executing: 'Preparing Your Info...', idle: 'Connected'
-            };
-            if (bar[key]) sessionLabel.textContent = bar[key];
+    passDismiss.addEventListener('click', closePass);
+
+    /* ── Sticky Socket Protocol ™ ── */
+    const socket = io(RENDER_BRIDGE_URL, {
+      transports: ['polling', 'websocket'],
+      rememberUpgrade: true,
+      timeout: 20000,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      rejectUnauthorized: false,
+    });
+
+    let flashTimer = null;
+
+    socket.on('connect', () => {
+      document.body.classList.remove('bridge-reconnecting');
+      if (!document.body.classList.contains('guest-mode') && !document.body.classList.contains('call-active')) {
+        setAIState('idle');
+        aiHud.style.borderColor = 'rgba(74,222,128,0.5)';
+        aiHud.style.boxShadow   = '0 0 18px rgba(74,222,128,0.15)';
+        clearTimeout(flashTimer);
+        flashTimer = setTimeout(() => { aiHud.style.borderColor = ''; aiHud.style.boxShadow = ''; }, 1800);
+      }
+      console.log('Socket | ID: ' + socket.id + ' | Transport: ' + socket.io.engine.transport.name);
+    });
+
+    socket.on('disconnect', (reason) => {
+      document.body.classList.add('bridge-reconnecting');
+      if (!document.body.classList.contains('call-active')) setAIState('reconnecting');
+    });
+
+    socket.on('connect_error', (err) => {
+      document.body.classList.add('bridge-reconnecting');
+      if (!document.body.classList.contains('call-active')) setAIState('reconnecting');
+      console.error('Socket error: ' + err.message);
+    });
+
+    socket.on('AI_STATE_UPDATE', ({ state }) => {
+      if (document.body.classList.contains('guest-mode')) return;
+      const map = { LISTENING: 'listening', THINKING: 'thinking', SPEAKING: 'speaking', EXECUTING: 'executing', IDLE: 'idle' };
+      setAIState(map[state] || 'idle');
+    });
+
+    socket.on('COMMAND_UPDATE_UI', ({ viewType, tourName, qrUrl, vibe }) => {
+      setVibe(vibe);
+      if (!document.body.classList.contains('guest-mode')) setAIState('executing');
+      const delay = vibe === 'luxury' ? 1800 : 600;
+      if (viewType === 'tour_details' || viewType === 'booking_qr') {
+        setTimeout(() => { openPass(tourName, qrUrl); setAIState('idle'); }, delay);
+      } else {
+        setTimeout(() => setAIState('idle'), delay);
+      }
+    });
+
+    function activateGuestMode() {
+      document.body.classList.add('guest-mode');
+      tapZone.style.pointerEvents = 'none';
+      setAIState('guest');
+    }
+
+    reconnectBtn.addEventListener('click', () => {
+      reconnectBtn.disabled = true;
+      reconnectBtn.classList.add('retrying');
+      setTimeout(() => window.location.reload(), 500);
+    });
+
+    /* ── Wake Lock ── */
+    let wakeLock = null;
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('Screen Wake Lock is active');
         }
+      } catch (err) {
+        console.error('Wake Lock error: ' + err.name + ', ' + err.message);
+      }
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
+    });
+    requestWakeLock();
 
-        /* ── Vibe ── */
-        function setVibe(v) {
-            document.body.classList.remove('vibe-rain', 'vibe-luxury', 'vibe-adventure');
-            if (v) document.body.classList.add(`vibe-${v}`);
-        }
+    /* ── Vapi Bootstrap ── */
+    function bootVapi() {
+      if (typeof window.Vapi !== 'undefined') {
+        document.body.classList.remove('guest-mode');
+        aiLabel.textContent = 'System Online';
+        console.log('Vapi CDN confirmed | ASSISTANT_ID: ' + ASSISTANT_ID);
 
-        /* ── The Pass ── */
-        function openPass(name, url) {
-            passTourName.textContent = name || 'Your Experience';
-            passQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
-            thePass.classList.add('open');
-            document.body.classList.add('pass-open');
-        }
-        function closePass() { thePass.classList.remove('open'); document.body.classList.remove('pass-open'); }
-        passDismiss.addEventListener('click', closePass);
+        const vapiInstance = new window.Vapi(VAPI_PUBLIC_KEY);
+        tapZone.style.pointerEvents = 'auto';
+        if (!document.body.classList.contains('bridge-reconnecting')) setAIState('idle');
 
-        /* ════════════════════════════════════════════════
-           STICKY SOCKET PROTOCOL ™
-           polling first → stable on hotel/4G networks
-           rememberUpgrade → skips polling after first WS success
-           timeout 20s → handles congested handshakes
-           Infinity reconnects → never gives up
-           rejectUnauthorized:false → punches through SSL proxies
-        ════════════════════════════════════════════════ */
-        const socket = io(RENDER_BRIDGE_URL, {
-            transports: ['polling', 'websocket'],
-            rememberUpgrade: true,
-            timeout: 20000,
-            reconnection: true,
-            reconnectionAttempts: Infinity,
-            reconnectionDelay: 2000,
-            reconnectionDelayMax: 10000,
-            rejectUnauthorized: false,
+        tapZone.addEventListener('click', () => {
+          if (document.body.classList.contains('call-active')) return;
+          if (document.body.classList.contains('bridge-reconnecting')) return;
+          vapiInstance.start(ASSISTANT_ID);
+          sessionLabel.textContent = 'Connecting...';
+          setAIState('thinking');
         });
 
-        let flashTimer = null;
+        endBtn.addEventListener('click', () => vapiInstance.stop());
 
-        socket.on('connect', () => {
-            document.body.classList.remove('bridge-reconnecting');
-            if (!document.body.classList.contains('guest-mode') &&
-                !document.body.classList.contains('call-active')) {
-                setAIState('idle');
-                aiHud.style.borderColor = 'rgba(74,222,128,0.5)';
-                aiHud.style.boxShadow = '0 0 18px rgba(74,222,128,0.15)';
-                clearTimeout(flashTimer);
-                flashTimer = setTimeout(() => {
-                    aiHud.style.borderColor = '';
-                    aiHud.style.boxShadow = '';
-                }, 1800);
+        vapiInstance.on('speech-start', () => setAIState('listening'));
+        vapiInstance.on('speech-end',   () => setAIState('thinking'));
+
+        vapiInstance.on('message', (msg) => {
+          if (msg.type === 'speech-update') {
+            if (msg.role === 'assistant' && msg.status === 'started') setAIState('speaking');
+            if (msg.role === 'assistant' && msg.status === 'stopped')  setAIState('idle');
+          }
+
+          /* ── BOOKING TOOL HANDLER ── */
+          if (msg.type === 'tool-calls') {
+            const call = msg.toolCalls?.[0];
+            if (call && call.function?.name === 'send_booking_to_human') {
+              let args = {};
+              try { args = JSON.parse(call.function.arguments || '{}'); } catch(e) {}
+
+              // Tool schema: guest_name, tour_type, preferred_date
+              const tourName = args.tour_type      || 'Desert Safari';
+              const guest    = args.guest_name     || 'Valued Guest';
+              const date     = args.preferred_date || '';
+
+              // Build booking URL with real guest data
+              const qrUrl = 'https://rayna.com/book/'
+                + encodeURIComponent(tourName)
+                + '?guest=' + encodeURIComponent(guest)
+                + '&date='  + encodeURIComponent(date);
+
+              // 1. Show QR card on kiosk
+              openPass(tourName, qrUrl);
+              setVibe('luxury');
+
+              // 2. Notify relay -> Telegram fires with full guest details
+              socket.emit('BOOKING_CONFIRMED', { tourName, guest, date, qrUrl });
+
+              console.log('Booking captured:', tourName, guest, date);
             }
-            console.log(`✅ Socket | ID: ${socket.id} | Transport: ${socket.io.engine.transport.name}`);
+          }
         });
 
-        socket.on('disconnect', (reason) => {
-            document.body.classList.add('bridge-reconnecting');
-            if (!document.body.classList.contains('call-active')) setAIState('reconnecting');
-            console.warn(`🔌 Disconnected: ${reason}`);
+        vapiInstance.on('call-start', () => {
+          document.body.classList.add('call-active');
+          sessionLabel.textContent = 'Connected';
+          setAIState('idle');
         });
 
-        socket.on('connect_error', (err) => {
-            document.body.classList.add('bridge-reconnecting');
-            if (!document.body.classList.contains('call-active')) setAIState('reconnecting');
-            console.error(`❌ Socket error: ${err.message}`);
+        vapiInstance.on('call-end', () => {
+          document.body.classList.remove('call-active');
+          setVibe(null);
+          closePass();
+          setAIState('idle');
+          tapZone.style.pointerEvents = 'auto';
         });
 
-        socket.on('AI_STATE_UPDATE', ({ state }) => {
-            if (document.body.classList.contains('guest-mode')) return;
-            const map = { LISTENING: 'listening', THINKING: 'thinking', SPEAKING: 'speaking', EXECUTING: 'executing', IDLE: 'idle' };
-            setAIState(map[state] || 'idle');
+        vapiInstance.on('error', (err) => {
+          console.error('Vapi error:', err);
+          document.body.classList.remove('call-active');
+          setAIState('idle');
         });
 
-        socket.on('COMMAND_UPDATE_UI', ({ viewType, tourName, qrUrl, vibe }) => {
-            setVibe(vibe);
-            if (!document.body.classList.contains('guest-mode')) setAIState('executing');
-            const delay = vibe === 'luxury' ? 1800 : 600;
-            if (viewType === 'tour_details' || viewType === 'booking_qr') {
-                setTimeout(() => { openPass(tourName, qrUrl); setAIState('idle'); }, delay);
-            } else {
-                setTimeout(() => setAIState('idle'), delay);
-            }
-        });
+      } else {
+        activateGuestMode();
+      }
+    }
 
-        /* ── Guest Mode ── */
-        function activateGuestMode() {
-            console.warn('⚠ vapi.js not found — Guest Mode active.');
-            document.body.classList.add('guest-mode');
-            tapZone.style.pointerEvents = 'none';
-            setAIState('guest');
-        }
-        reconnectBtn.addEventListener('click', () => {
-            reconnectBtn.disabled = true;
-            reconnectBtn.classList.add('retrying');
-            setTimeout(() => window.location.reload(), 500);
-        });
-
-        /* ── Screen Wake Lock (Keep-Alive) ── */
-        let wakeLock = null;
-        async function requestWakeLock() {
-            try { 
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('🔒 Screen Wake Lock is active');
-                }
-            } catch (err) {
-                console.error(`❌ Wake Lock error: ${err.name}, ${err.message}`);
-            }
-        }
-        document.addEventListener('visibilitychange', () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
-        });
-        requestWakeLock();
-
-        /* ── Vapi Bootstrap ── */
-        function bootVapi() {
-            if (typeof window.Vapi !== 'undefined') {
-                document.body.classList.remove('guest-mode');
-                aiLabel.textContent = 'System Online';
-
-                console.log('✅ Vapi CDN confirmed | ASSISTANT_ID:', ASSISTANT_ID);
-                const vapiInstance = new window.Vapi(VAPI_PUBLIC_KEY);
-
-                tapZone.style.pointerEvents = 'auto';
-                if (!document.body.classList.contains('bridge-reconnecting')) setAIState('idle');
-
-                tapZone.addEventListener('click', () => {
-                    if (document.body.classList.contains('call-active')) return;
-                    if (document.body.classList.contains('bridge-reconnecting')) return;
-                    vapiInstance.start(ASSISTANT_ID);
-                    sessionLabel.textContent = 'Connecting...';
-                    setAIState('thinking');
-                });
-
-                endBtn.addEventListener('click', () => vapiInstance.stop());
-
-                vapiInstance.on('speech-start', () => setAIState('listening'));
-                vapiInstance.on('speech-end', () => setAIState('thinking'));
-                vapiInstance.on('message', (msg) => {
-                    if (msg.type === 'speech-update') {
-                        if (msg.role === 'assistant' && msg.status === 'started') setAIState('speaking');
-                        if (msg.role === 'assistant' && msg.status === 'stopped') setAIState('idle');
-                    }
-                    if (msg.type === 'tool-calls' && msg.toolCalls?.[0]?.function?.name === 'send_booking_to_human') {
-                        const call = msg.toolCalls[0];
-                        const args = JSON.parse(call.function.arguments || '{}');
-                        
-                        // 1. Trigger the Visuals with data from the AI
-                        openPass(args.tourName || "Desert Safari", args.qrUrl || "https://your-link.com");
-                        setVibe(args.vibe || 'luxury');
-
-                        // 2. THE HANDSHAKE
-                        vapiInstance.send({
-                            type: 'tool-call-result',
-                            toolCallId: call.id,
-                            result: "The QR code has been successfully displayed on the Kiosk screen."
-                        });
-                    }
-                });
-                vapiInstance.on('call-start', () => {
-                    document.body.classList.add('call-active');
-                    sessionLabel.textContent = 'Connected';
-                    setAIState('idle');
-                });
-                vapiInstance.on('call-end', () => {
-                    document.body.classList.remove('call-active');
-                    setVibe(null); closePass(); setAIState('idle');
-                    tapZone.style.pointerEvents = 'auto';
-                });
-                vapiInstance.on('error', (err) => {
-                    console.error('❌ Vapi error:', err);
-                    document.body.classList.remove('call-active');
-                    setAIState('idle');
-                });
-            } else {
-                activateGuestMode();
-            }
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', bootVapi);
-        } else {
-            bootVapi();
-        }
-    </script>
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootVapi);
+    } else {
+      bootVapi();
+    }
+  </script>
 </body>
-
 </html>
