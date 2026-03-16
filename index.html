@@ -14,11 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@200;300;400;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --gold: #D4AF37; --gold-glow: rgba(212, 175, 55, 0.40); --gold-dim: rgba(212, 175, 55, 0.14);
-      --black: #050505; --glass: rgba(5, 5, 5, 0.52); --glass-border: rgba(212, 175, 55, 0.18);
-      --blur: 24px; --ease: cubic-bezier(0.16, 1, 0.3, 1); --ease-s: cubic-bezier(0.4, 0, 0.2, 1);
-    }
+    :root { --gold: #D4AF37; --gold-glow: rgba(212, 175, 55, 0.40); --gold-dim: rgba(212, 175, 55, 0.14); --black: #050505; --glass: rgba(5, 5, 5, 0.52); --glass-border: rgba(212, 175, 55, 0.18); --blur: 24px; --ease: cubic-bezier(0.16, 1, 0.3, 1); --ease-s: cubic-bezier(0.4, 0, 0.2, 1); }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #050505; font-family: 'Montserrat', sans-serif; color: white; }
     #bg-video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center center; z-index: 0; animation: videoBreath 20s var(--ease-s) infinite alternate; }
@@ -128,10 +124,7 @@
     <source src="https://assets.mixkit.co/videos/20109/20109-720.mp4" type="video/mp4">
     <source src="https://assets.mixkit.co/videos/20109/20109-360.mp4" type="video/mp4">
   </video>
-  <div id="overlay-base"></div>
-  <div id="overlay-vignette"></div>
-  <div id="overlay-bottom"></div>
-  <div id="vibe-tint"></div>
+  <div id="overlay-base"></div><div id="overlay-vignette"></div><div id="overlay-bottom"></div><div id="vibe-tint"></div>
   <div id="reconnect-banner"><div class="banner-dot"></div><span>Reconnecting to Bridge...</span></div>
   <div id="ai-hud" class="s-idle"><div id="ai-dot"></div><span id="ai-label">Loading...</span></div>
   <div id="hero-brand">
@@ -140,10 +133,7 @@
       <h1 class="brand-title">Your <em>Travel</em><br>Expert<span class="brand-tm"> ™</span></h1>
       <div class="brand-rule"></div>
       <p class="brand-sub">Powered by Artificial Intelligence</p>
-      <div class="brand-touch">
-        <div class="touch-ring"><div class="touch-ring-inner"></div></div>
-        <span class="touch-label">Touch Anywhere to Begin</span>
-      </div>
+      <div class="brand-touch"><div class="touch-ring"><div class="touch-ring-inner"></div></div><span class="touch-label">Touch Anywhere to Begin</span></div>
     </div>
   </div>
   <div id="guest-overlay">
@@ -185,7 +175,6 @@
     const tapZone      = document.getElementById('tap-zone');
     const sessionLabel = document.getElementById('session-label');
     const endBtn       = document.getElementById('end-btn');
-    const thePass      = document.getElementById('the-pass');
     const passTourName = document.getElementById('pass-tour-name');
     const passQrImg    = document.getElementById('pass-qr-img');
     const passDismiss  = document.getElementById('pass-dismiss');
@@ -223,27 +212,21 @@
     function openPass(name, url) {
       passTourName.textContent = name || 'Your Experience';
       passQrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
-      thePass.classList.add('open');
+      document.getElementById('the-pass').classList.add('open');
       document.body.classList.add('pass-open');
     }
 
     function closePass() {
-      thePass.classList.remove('open');
+      document.getElementById('the-pass').classList.remove('open');
       document.body.classList.remove('pass-open');
     }
 
     passDismiss.addEventListener('click', closePass);
 
-    /* ── Sticky Socket Protocol ™ ── */
     const socket = io(RENDER_BRIDGE_URL, {
-      transports: ['polling', 'websocket'],
-      rememberUpgrade: true,
-      timeout: 20000,
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 2000,
-      reconnectionDelayMax: 10000,
-      rejectUnauthorized: false,
+      transports: ['polling', 'websocket'], rememberUpgrade: true, timeout: 20000,
+      reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000, rejectUnauthorized: false,
     });
 
     let flashTimer = null;
@@ -260,7 +243,7 @@
       console.log('Socket | ID: ' + socket.id + ' | Transport: ' + socket.io.engine.transport.name);
     });
 
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', () => {
       document.body.classList.add('bridge-reconnecting');
       if (!document.body.classList.contains('call-active')) setAIState('reconnecting');
     });
@@ -300,7 +283,6 @@
       setTimeout(() => window.location.reload(), 500);
     });
 
-    /* ── Wake Lock ── */
     let wakeLock = null;
     async function requestWakeLock() {
       try {
@@ -317,7 +299,6 @@
     });
     requestWakeLock();
 
-    /* ── Vapi Bootstrap ── */
     function bootVapi() {
       if (typeof window.Vapi !== 'undefined') {
         document.body.classList.remove('guest-mode');
@@ -337,7 +318,6 @@
         });
 
         endBtn.addEventListener('click', () => vapiInstance.stop());
-
         vapiInstance.on('speech-start', () => setAIState('listening'));
         vapiInstance.on('speech-end',   () => setAIState('thinking'));
 
@@ -346,37 +326,23 @@
             if (msg.role === 'assistant' && msg.status === 'started') setAIState('speaking');
             if (msg.role === 'assistant' && msg.status === 'stopped')  setAIState('idle');
           }
-
-          /* ── BOOKING TOOL HANDLER ── */
           if (msg.type === 'tool-calls') {
             const call = msg.toolCalls?.[0];
             if (call && call.function?.name === 'send_booking_to_human') {
               let args = {};
               try { args = JSON.parse(call.function.arguments || '{}'); } catch(e) {}
-
-              // Tool schema: guest_name, tour_type, preferred_date
               const tourName = args.tour_type      || 'Desert Safari';
               const guest    = args.guest_name     || 'Valued Guest';
               const date     = args.preferred_date || '';
-
-              // ── WhatsApp deep link ──────────────────────────────
-              // Guest scans QR -> WhatsApp opens with pre-filled message
-              const waMessage = 'Hi! I'd like to book the '
-                + tourName
-                + ' for ' + guest
+              // FIX: apostrophe escaped with \u0027 — no quote collision possible
+              const waMessage = 'Hi! I\'d like to book the '
+                + tourName + ' for ' + guest
                 + (date ? ' on ' + date : '')
                 + '. Please confirm availability.';
-
-              const waUrl = 'https://wa.me/' + WHATSAPP_NUMBER
-                + '?text=' + encodeURIComponent(waMessage);
-
-              // 1. Show QR card with WhatsApp link
+              const waUrl = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(waMessage);
               openPass(tourName, waUrl);
               setVibe('luxury');
-
-              // 2. Notify relay -> Telegram fires with full guest details
               socket.emit('BOOKING_CONFIRMED', { tourName, guest, date, qrUrl: waUrl });
-
               console.log('Booking captured:', tourName, guest, date);
             }
           }
@@ -387,21 +353,16 @@
           sessionLabel.textContent = 'Connected';
           setAIState('idle');
         });
-
         vapiInstance.on('call-end', () => {
           document.body.classList.remove('call-active');
-          setVibe(null);
-          closePass();
-          setAIState('idle');
+          setVibe(null); closePass(); setAIState('idle');
           tapZone.style.pointerEvents = 'auto';
         });
-
         vapiInstance.on('error', (err) => {
           console.error('Vapi error:', err);
           document.body.classList.remove('call-active');
           setAIState('idle');
         });
-
       } else {
         activateGuestMode();
       }
