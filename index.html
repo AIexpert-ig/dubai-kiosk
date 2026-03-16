@@ -160,11 +160,11 @@
     <button id="end-btn">End Session</button>
   </div>
   <div id="the-pass">
-    <span class="pass-label">Your Concierge Has Prepared</span>
+    <span class="pass-label">Scan to Connect on WhatsApp</span>
     <div class="pass-card">
       <h3 id="pass-tour-name">Experience Details</h3>
-      <img id="pass-qr-img" src="" alt="Scan to Book" width="220" height="220">
-      <p class="pass-card-sub">Scan with your phone to book</p>
+      <img id="pass-qr-img" src="" alt="Scan to WhatsApp" width="220" height="220">
+      <p class="pass-card-sub">Scan with your phone to confirm</p>
     </div>
     <button class="pass-dismiss" id="pass-dismiss">Dismiss ✕</button>
   </div>
@@ -180,6 +180,7 @@
     const RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
     const VAPI_PUBLIC_KEY   = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
     const ASSISTANT_ID      = "fcb09257-e877-494d-a7c9-d3a152da0059";
+    const WHATSAPP_NUMBER   = "971506313291";
 
     const tapZone      = document.getElementById('tap-zone');
     const sessionLabel = document.getElementById('session-label');
@@ -358,18 +359,23 @@
               const guest    = args.guest_name     || 'Valued Guest';
               const date     = args.preferred_date || '';
 
-              // Build booking URL with real guest data
-              const qrUrl = 'https://rayna.com/book/'
-                + encodeURIComponent(tourName)
-                + '?guest=' + encodeURIComponent(guest)
-                + '&date='  + encodeURIComponent(date);
+              // ── WhatsApp deep link ──────────────────────────────
+              // Guest scans QR -> WhatsApp opens with pre-filled message
+              const waMessage = 'Hi! I'd like to book the '
+                + tourName
+                + ' for ' + guest
+                + (date ? ' on ' + date : '')
+                + '. Please confirm availability.';
 
-              // 1. Show QR card on kiosk
-              openPass(tourName, qrUrl);
+              const waUrl = 'https://wa.me/' + WHATSAPP_NUMBER
+                + '?text=' + encodeURIComponent(waMessage);
+
+              // 1. Show QR card with WhatsApp link
+              openPass(tourName, waUrl);
               setVibe('luxury');
 
               // 2. Notify relay -> Telegram fires with full guest details
-              socket.emit('BOOKING_CONFIRMED', { tourName, guest, date, qrUrl });
+              socket.emit('BOOKING_CONFIRMED', { tourName, guest, date, qrUrl: waUrl });
 
               console.log('Booking captured:', tourName, guest, date);
             }
