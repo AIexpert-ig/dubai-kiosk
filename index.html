@@ -321,6 +321,23 @@
         vapiInstance.on('speech-start', () => setAIState('listening'));
         vapiInstance.on('speech-end',   () => setAIState('thinking'));
 
+        // Transcript accumulator — captures guest name from conversation
+        // as a fallback when the AI tool call omits guest_name
+        window._capturedGuestName = "";
+        vapiInstance.on('message', function(m) {
+          if (m.type === 'transcript' && m.role === 'user' && m.transcriptType === 'final') {
+            var txt = m.transcript || '';
+            // Match "my name is X", "I am X", "I'm X", "this is X"
+            var match = txt.match(/(?:my name is|i am|i\'m|this is)\s+([a-z][a-z\s]{1,30})/i);
+            if (match && match[1]) {
+              var name = match[1].trim().replace(/\s+/g, ' ');
+              // Capitalise each word
+              window._capturedGuestName = name.replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+              console.log("Guest name captured from transcript:", window._capturedGuestName);
+            }
+          }
+        });
+
         vapiInstance.on('message', (msg) => {
           if (msg.type === 'speech-update') {
             if (msg.role === 'assistant' && msg.status === 'started') setAIState('speaking');
