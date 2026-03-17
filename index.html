@@ -331,9 +331,11 @@
             if (call && call.function?.name === 'send_booking_to_human') {
               let args = {};
               try { args = JSON.parse(call.function.arguments || '{}'); } catch(e) {}
-              const tourName = args.tour_type      || 'Desert Safari';
-              const guest    = args.guest_name     || 'Valued Guest';
-              const date     = args.preferred_date || '';
+          // Support both snake_case and camelCase keys from Vapi
+          const tourName    = args.tour_type      || args.tourType   || args.tourName  || 'Desert Safari';
+          const guest       = args.guest_name     || args.guestName  || args.name      || '';
+          const date        = args.preferred_date || args.preferredDate || args.date   || '';
+          const preferences = args.preferences    || args.notes      || args.special_requests || '';
               // FIX: apostrophe escaped with \u0027 — no quote collision possible
               const waMessage = 'Hi! I\'d like to book the '
                 + tourName + ' for ' + guest
