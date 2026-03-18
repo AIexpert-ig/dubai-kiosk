@@ -385,8 +385,7 @@
           setAIState('idle');
         });
         vapiInstance.on('call-end', () => {
-          document.body.classList.remove('call-active');
-          setVibe(null); closePass(); setAIState('idle');
+fix: parse tool arguments as object not string -- Steven/Unknown root cause          setVibe(null); closePass(); setAIState('idle');
           tapZone.style.pointerEvents = 'auto';
         });
         vapiInstance.on('error', (err) => {
