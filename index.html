@@ -344,6 +344,7 @@
             if (msg.role === 'assistant' && msg.status === 'stopped')  setAIState('idle');
           }
           if (msg.type === 'tool-calls') {
+            console.log('[Kiosk] Tool call received:', JSON.stringify(msg));
             const call = msg.toolCalls?.[0];
             if (call && call.function?.name === 'send_booking_to_human') {
               let args = {};
@@ -355,6 +356,8 @@
               const date        = args.preferred_date || args.preferredDate  || args.date     || 'Not specified';
               const pax         = args.pax            || args.pax_count      || 'Not specified';
               const preferences = args.preferences    || args.notes          || args.special_requests || '';
+
+              console.log('[Kiosk] Extracted values:', { guest, tourName, date, pax });
 
               const waMessage = "Hi! I'd like to book the " + tourName + " for " + guest + (date !== 'Not specified' ? " on " + date : "") + (pax !== 'Not specified' ? " (" + pax + " pax)" : "") + ". Please confirm availability.";
               const waUrl = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(waMessage);
@@ -369,6 +372,7 @@
                   pax: pax,
                   qrUrl: waUrl
               });
+              console.log('[Kiosk] Emitted BOOKING_CONFIRMED');
               console.log('Booking captured:', tourName, guest, date, pax);
             }
           }
