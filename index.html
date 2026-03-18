@@ -347,8 +347,9 @@
             console.log('[Kiosk] Tool call received:', JSON.stringify(msg));
             const call = msg.toolCalls?.[0];
             if (call && call.function?.name === 'send_booking_to_human') {
-              let args = {};
-              try { args = JSON.parse(call.function.arguments || '{}'); } catch(e) {}
+              var rawArgs = call.function.arguments;
+              var args = (typeof rawArgs === 'object' && rawArgs !== null) ? rawArgs : {};
+              if (typeof rawArgs === 'string') { try { args = JSON.parse(rawArgs); } catch(e) {} }
               
               // Support both snake_case and camelCase keys from Vapi
               const tourName    = args.tourName       || args.tour_type      || args.tourType || 'Desert Safari';
