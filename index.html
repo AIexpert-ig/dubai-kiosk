@@ -14,109 +14,124 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@200;300;400;700&display=swap" rel="stylesheet">
   <style>
-    :root { --gold: #D4AF37; --gold-glow: rgba(212, 175, 55, 0.40); --gold-dim: rgba(212, 175, 55, 0.14); --black: #050505; --glass: rgba(5, 5, 5, 0.52); --glass-border: rgba(212, 175, 55, 0.18); --blur: 24px; --ease: cubic-bezier(0.16, 1, 0.3, 1); --ease-s: cubic-bezier(0.4, 0, 0.2, 1); }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #050505; font-family: 'Montserrat', sans-serif; color: white; }
-    #bg-video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center center; z-index: 0; animation: videoBreath 20s var(--ease-s) infinite alternate; }
-    @keyframes videoBreath { from { transform: scale(1.00); } to { transform: scale(1.04); } }
-    #overlay-base { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: rgba(3, 3, 8, 0.45); }
-    #overlay-vignette { position: fixed; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse 75% 80% at 50% 50%, transparent 25%, rgba(3, 3, 8, 0.65) 100%); }
-    #overlay-bottom { position: fixed; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(to bottom, rgba(3, 3, 8, 0.40) 0%, transparent 25%, transparent 55%, rgba(3, 3, 8, 0.80) 100%); }
-    #vibe-tint { position: fixed; inset: 0; z-index: 4; pointer-events: none; opacity: 0; transition: opacity 2s var(--ease-s); }
-    body.vibe-rain #vibe-tint { background: rgba(0, 26, 52, 0.40); opacity: 1; }
-    body.vibe-luxury #vibe-tint { background: rgba(40, 28, 0, 0.45); opacity: 1; }
-    body.vibe-adventure #vibe-tint { background: rgba(40, 0, 0, 0.45); opacity: 1; }
-    #hero-brand { position: fixed; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center; pointer-events: none; transition: opacity 1s var(--ease), transform 1s var(--ease); }
-    body.call-active #hero-brand { opacity: 0; transform: scale(0.97); pointer-events: none; }
-    body.guest-mode #hero-brand { opacity: 0; pointer-events: none; }
-    body.bridge-reconnecting #hero-brand { opacity: 0.3; pointer-events: none; }
-    .brand-glass { background: rgba(5, 5, 10, 0.38); backdrop-filter: blur(var(--blur)) saturate(1.4); -webkit-backdrop-filter: blur(var(--blur)) saturate(1.4); border: 1px solid rgba(212, 175, 55, 0.20); border-radius: 28px; padding: 56px 72px; text-align: center; max-width: 600px; width: 90%; box-shadow: inset 0 1px 0 rgba(212, 175, 55, 0.12), 0 32px 80px rgba(0, 0, 0, 0.50), 0 0 0 1px rgba(255, 255, 255, 0.04); position: relative; }
-    .brand-glass::before, .brand-glass::after { content: ''; position: absolute; width: 36px; height: 36px; border-color: rgba(212, 175, 55, 0.35); border-style: solid; }
-    .brand-glass::before { top: 20px; left: 20px; border-width: 1px 0 0 1px; }
-    .brand-glass::after { bottom: 20px; right: 20px; border-width: 0 1px 1px 0; }
-    .brand-eyebrow { font-size: 0.58rem; letter-spacing: 0.55em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; opacity: 0; animation: fadeUp 1s 0.3s var(--ease) forwards; }
-    .brand-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(3rem, 7vw, 5.2rem); font-weight: 300; line-height: 1.0; letter-spacing: 0.04em; color: white; margin-bottom: 6px; opacity: 0; animation: fadeUp 1s 0.5s var(--ease) forwards; }
-    .brand-title em { font-style: italic; color: var(--gold); }
-    .brand-tm { font-family: 'Montserrat', sans-serif; font-size: 0.55rem; letter-spacing: 0.3em; color: rgba(212, 175, 55, 0.55); vertical-align: super; font-weight: 300; }
-    .brand-rule { width: 60px; height: 1px; background: linear-gradient(to right, transparent, var(--gold), transparent); margin: 22px auto; opacity: 0; animation: fadeIn 1s 0.7s ease forwards; }
-    .brand-sub { font-size: 0.62rem; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(255, 255, 255, 0.35); margin-bottom: 36px; opacity: 0; animation: fadeUp 1s 0.75s var(--ease) forwards; }
-    .brand-touch { display: flex; align-items: center; justify-content: center; gap: 14px; opacity: 0; animation: fadeUp 1s 1s var(--ease) forwards; }
-    body.bridge-reconnecting .brand-touch { opacity: 0; }
-    .touch-ring { width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(212, 175, 55, 0.45); display: flex; align-items: center; justify-content: center; animation: ringPulse 2.6s var(--ease-s) infinite; }
-    .touch-ring-inner { width: 28px; height: 28px; border-radius: 50%; background: rgba(212, 175, 55, 0.10); border: 1px solid rgba(212, 175, 55, 0.60); }
-    @keyframes ringPulse { 0%, 100% { box-shadow: 0 0 0 0 var(--gold-glow); } 55% { box-shadow: 0 0 0 12px rgba(212, 175, 55, 0); } }
-    .touch-label { font-size: 0.6rem; letter-spacing: 0.32em; text-transform: uppercase; color: rgba(255, 255, 255, 0.35); }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    #reconnect-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 25; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 24px; background: rgba(40, 18, 0, 0.90); border-bottom: 1px solid rgba(251, 146, 60, 0.25); backdrop-filter: blur(14px); transform: translateY(-100%); transition: transform 0.55s var(--ease); }
-    body.bridge-reconnecting #reconnect-banner { transform: translateY(0); }
-    .banner-dot { width: 7px; height: 7px; border-radius: 50%; background: #fb923c; flex-shrink: 0; animation: dotPulse 1.4s ease infinite; }
-    #reconnect-banner span { font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(253, 186, 116, 0.80); }
-    #ai-hud { position: fixed; top: 24px; right: 24px; z-index: 20; display: flex; align-items: center; gap: 9px; background: rgba(5, 5, 10, 0.75); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 30px; padding: 9px 18px; backdrop-filter: blur(16px); transition: right 0.5s var(--ease), border-color 0.5s ease, box-shadow 0.5s ease; }
-    body.pass-open #ai-hud { right: calc(330px + 24px); }
-    body.bridge-reconnecting #ai-hud { border-color: rgba(251, 146, 60, 0.35); box-shadow: 0 0 18px rgba(251, 146, 60, 0.12); }
-    #ai-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); flex-shrink: 0; transition: background 0.4s ease, box-shadow 0.4s ease; }
-    #ai-label { font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255, 255, 255, 0.30); transition: color 0.4s ease; white-space: nowrap; }
-    #ai-hud.s-idle #ai-dot { background: rgba(255, 255, 255, 0.22); } #ai-hud.s-idle #ai-label { color: rgba(255, 255, 255, 0.30); }
-    #ai-hud.s-listening #ai-dot { background: #4ade80; box-shadow: 0 0 10px #4ade80; animation: dotPulse 1s ease infinite; } #ai-hud.s-listening #ai-label { color: #4ade80; }
-    #ai-hud.s-thinking #ai-dot { background: var(--gold); box-shadow: 0 0 10px var(--gold); animation: dotPulse 0.7s ease infinite; } #ai-hud.s-thinking #ai-label { color: #F0D060; }
-    #ai-hud.s-speaking #ai-dot { background: #a78bfa; box-shadow: 0 0 10px #a78bfa; animation: dotPulse 0.45s ease infinite; } #ai-hud.s-speaking #ai-label { color: #c4b5fd; }
-    #ai-hud.s-executing #ai-dot { background: #60a5fa; box-shadow: 0 0 10px #60a5fa; animation: dotSpin 0.55s linear infinite; } #ai-hud.s-executing #ai-label { color: #93c5fd; }
-    #ai-hud.s-reconnecting #ai-dot { background: #fb923c; box-shadow: 0 0 12px rgba(251, 146, 60, 0.7); animation: dotPulse 1.6s ease infinite; } #ai-hud.s-reconnecting #ai-label { color: #fdba74; }
-    #ai-hud.s-guest #ai-dot { background: #fb923c; box-shadow: 0 0 8px rgba(251, 146, 60, 0.5); animation: dotPulse 2.4s ease infinite; } #ai-hud.s-guest #ai-label { color: #fdba74; }
-    @keyframes dotPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.65); opacity: 0.5; } }
-    @keyframes dotSpin { to { transform: rotate(360deg); } }
-    #session-bar { position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%) translateY(20px); z-index: 10; display: flex; align-items: center; gap: 20px; background: rgba(5, 5, 10, 0.65); border: 1px solid rgba(212, 175, 55, 0.18); border-radius: 60px; padding: 14px 28px; backdrop-filter: blur(var(--blur)); opacity: 0; pointer-events: none; transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
-    body.call-active #session-bar { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
-    #waveform { display: flex; align-items: center; gap: 3px; height: 22px; }
-    #waveform span { display: block; width: 3px; border-radius: 2px; background: var(--gold); height: 5px; }
-    #waveform span:nth-child(1) { animation: wave 1.3s 0.00s ease-in-out infinite; }
-    #waveform span:nth-child(2) { animation: wave 1.3s 0.15s ease-in-out infinite; }
-    #waveform span:nth-child(3) { animation: wave 1.3s 0.30s ease-in-out infinite; }
-    #waveform span:nth-child(4) { animation: wave 1.3s 0.45s ease-in-out infinite; }
-    #waveform span:nth-child(5) { animation: wave 1.3s 0.60s ease-in-out infinite; }
-    @keyframes wave { 0%, 100% { height: 4px; opacity: 0.35; } 50% { height: 18px; opacity: 1; } }
-    body.st-listening #waveform span { animation-duration: 0.7s; }
-    body.st-speaking #waveform span { animation-duration: 0.45s; }
-    body.st-thinking #waveform span { opacity: 0.2 !important; height: 4px !important; animation: none; }
-    #session-label { font-size: 0.62rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255, 255, 255, 0.40); white-space: nowrap; }
-    #end-btn { padding: 9px 22px; font-family: 'Montserrat', sans-serif; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; background: rgba(255, 65, 43, 0.10); color: rgba(255, 100, 80, 0.90); border: 1px solid rgba(255, 65, 43, 0.30); border-radius: 30px; cursor: pointer; transition: all 0.3s ease; }
-    #end-btn:hover { background: rgba(255, 65, 43, 0.22); box-shadow: 0 0 18px rgba(255, 65, 43, 0.2); }
-    #the-pass { position: fixed; bottom: 48px; right: 52px; z-index: 12; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; transform: translateY(120%) translateX(20px); opacity: 0; pointer-events: none; transition: transform 1s var(--ease), opacity 0.8s var(--ease); }
-    #the-pass.open { transform: translateY(0) translateX(0); opacity: 1; pointer-events: auto; }
-    .pass-label { font-size: 0.58rem; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(212, 175, 55, 0.60); text-align: right; }
-    .pass-card { background: rgba(255, 255, 255, 0.97); border-radius: 18px; padding: 20px 22px; text-align: center; box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(212, 175, 55, 0.35), 0 0 40px rgba(212, 175, 55, 0.10); animation: passReveal 0.9s var(--ease) both; }
-    @keyframes passReveal { from { transform: scale(0.90) rotate(-1.5deg); filter: blur(4px); opacity: 0; } to { transform: scale(1) rotate(0deg); filter: blur(0); opacity: 1; } }
-    .pass-card h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; font-weight: 600; color: #111; margin-bottom: 14px; letter-spacing: 0.04em; }
-    .pass-card img { display: block; border-radius: 8px; }
-    .pass-card-sub { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: #555; margin-top: 12px; }
-    .pass-dismiss { font-size: 0.56rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(255, 255, 255, 0.25); background: none; border: none; cursor: pointer; padding: 4px 0; transition: color 0.3s ease; }
-    .pass-dismiss:hover { color: rgba(255, 255, 255, 0.60); }
-    #guest-overlay { position: fixed; inset: 0; z-index: 9; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 0.8s var(--ease); }
-    body.guest-mode #guest-overlay { opacity: 1; pointer-events: auto; }
-    .guest-card { background: rgba(5, 5, 10, 0.60); border: 1px solid rgba(212, 175, 55, 0.20); border-radius: 24px; padding: 40px 52px; backdrop-filter: blur(var(--blur)); text-align: center; max-width: 440px; position: relative; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.50), inset 0 1px 0 rgba(212, 175, 55, 0.10); }
-    .guest-card::before, .guest-card::after { content: ''; position: absolute; width: 28px; height: 28px; border-color: rgba(212, 175, 55, 0.3); border-style: solid; }
-    .guest-card::before { top: 16px; left: 16px; border-width: 1px 0 0 1px; }
-    .guest-card::after { bottom: 16px; right: 16px; border-width: 0 1px 1px 0; }
-    .guest-eyebrow { font-size: 0.56rem; letter-spacing: 0.5em; text-transform: uppercase; color: rgba(251, 146, 60, 0.80); margin-bottom: 10px; }
-    .guest-title { font-family: 'Cormorant Garamond', serif; font-size: 1.9rem; font-weight: 300; letter-spacing: 0.06em; color: white; margin-bottom: 10px; }
-    .guest-body { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255, 255, 255, 0.28); line-height: 2.2; margin-bottom: 28px; }
-    #reconnect-btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 44px; font-family: 'Montserrat', sans-serif; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; background: transparent; color: var(--gold); border: 1px solid rgba(212, 175, 55, 0.45); border-radius: 50px; cursor: pointer; position: relative; overflow: hidden; transition: all 0.35s ease; }
-    #reconnect-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, var(--gold), #b8941f); transform: scaleX(0); transform-origin: left; transition: transform 0.4s var(--ease); z-index: -1; }
-    #reconnect-btn:hover { color: #000; box-shadow: 0 0 32px var(--gold-glow); }
-    #reconnect-btn:hover::before { transform: scaleX(1); }
-    #reconnect-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .reconnect-spinner { display: none; width: 13px; height: 13px; border-radius: 50%; border: 2px solid rgba(0, 0, 0, 0.2); border-top-color: currentColor; animation: spin 0.65s linear infinite; }
-    #reconnect-btn.retrying .reconnect-spinner { display: block; }
-    #reconnect-btn.retrying .reconnect-text { opacity: 0.65; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #tap-zone { position: fixed; inset: 0; z-index: 7; cursor: pointer; }
-    body.call-active #tap-zone { pointer-events: none; }
-    body.guest-mode #tap-zone { pointer-events: none; }
-    body.bridge-reconnecting #tap-zone { pointer-events: none; }
-    #signature { position: fixed; bottom: 20px; left: 0; right: 0; text-align: center; z-index: 6; pointer-events: none; opacity: 0; animation: fadeIn 1.5s 1.4s ease forwards; transition: opacity 0.8s ease; }
-    body.call-active #signature { opacity: 0; }
-    #signature span { font-size: 0.5rem; letter-spacing: 0.5em; text-transform: uppercase; color: rgba(255, 255, 255, 0.18); }
+    :root { --gold:#D4AF37; --gold-glow:rgba(212,175,55,.40); --gold-dim:rgba(212,175,55,.14); --black:#050505; --glass:rgba(5,5,5,.52); --glass-border:rgba(212,175,55,.18); --blur:24px; --ease:cubic-bezier(.16,1,.3,1); --ease-s:cubic-bezier(.4,0,.2,1); }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:100%;height:100%;overflow:hidden;background:#050505;font-family:'Montserrat',sans-serif;color:white}
+    #bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;z-index:0;animation:videoBreath 20s var(--ease-s) infinite alternate}
+    @keyframes videoBreath{from{transform:scale(1.00)}to{transform:scale(1.04)}}
+    #overlay-base{position:fixed;inset:0;z-index:1;pointer-events:none;background:rgba(3,3,8,.45)}
+    #overlay-vignette{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse 75% 80% at 50% 50%,transparent 25%,rgba(3,3,8,.65) 100%)}
+    #overlay-bottom{position:fixed;inset:0;z-index:3;pointer-events:none;background:linear-gradient(to bottom,rgba(3,3,8,.40) 0%,transparent 25%,transparent 55%,rgba(3,3,8,.80) 100%)}
+    #vibe-tint{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;transition:opacity 2s var(--ease-s)}
+    body.vibe-rain #vibe-tint{background:rgba(0,26,52,.40);opacity:1}
+    body.vibe-luxury #vibe-tint{background:rgba(40,28,0,.45);opacity:1}
+    body.vibe-adventure #vibe-tint{background:rgba(40,0,0,.45);opacity:1}
+    #hero-brand{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity 1s var(--ease),transform 1s var(--ease)}
+    body.call-active #hero-brand{opacity:0;transform:scale(.97);pointer-events:none}
+    body.guest-mode #hero-brand,body.bridge-reconnecting #hero-brand{opacity:0;pointer-events:none}
+    body.bridge-reconnecting #hero-brand{opacity:.3}
+    .brand-glass{background:rgba(5,5,10,.38);backdrop-filter:blur(var(--blur)) saturate(1.4);-webkit-backdrop-filter:blur(var(--blur)) saturate(1.4);border:1px solid rgba(212,175,55,.20);border-radius:28px;padding:56px 72px;text-align:center;max-width:600px;width:90%;box-shadow:inset 0 1px 0 rgba(212,175,55,.12),0 32px 80px rgba(0,0,0,.50),0 0 0 1px rgba(255,255,255,.04);position:relative}
+    .brand-glass::before,.brand-glass::after{content:'';position:absolute;width:36px;height:36px;border-color:rgba(212,175,55,.35);border-style:solid}
+    .brand-glass::before{top:20px;left:20px;border-width:1px 0 0 1px}
+    .brand-glass::after{bottom:20px;right:20px;border-width:0 1px 1px 0}
+    .brand-eyebrow{font-size:.58rem;letter-spacing:.55em;text-transform:uppercase;color:var(--gold);margin-bottom:20px;opacity:0;animation:fadeUp 1s .3s var(--ease) forwards}
+    .brand-title{font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,7vw,5.2rem);font-weight:300;line-height:1.0;letter-spacing:.04em;color:white;margin-bottom:6px;opacity:0;animation:fadeUp 1s .5s var(--ease) forwards}
+    .brand-title em{font-style:italic;color:var(--gold)}
+    .brand-tm{font-family:'Montserrat',sans-serif;font-size:.55rem;letter-spacing:.3em;color:rgba(212,175,55,.55);vertical-align:super;font-weight:300}
+    .brand-rule{width:60px;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent);margin:22px auto;opacity:0;animation:fadeIn 1s .7s ease forwards}
+    .brand-sub{font-size:.62rem;letter-spacing:.35em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:36px;opacity:0;animation:fadeUp 1s .75s var(--ease) forwards}
+    .brand-touch{display:flex;align-items:center;justify-content:center;gap:14px;opacity:0;animation:fadeUp 1s 1s var(--ease) forwards}
+    body.bridge-reconnecting .brand-touch{opacity:0}
+    .touch-ring{width:46px;height:46px;border-radius:50%;border:1px solid rgba(212,175,55,.45);display:flex;align-items:center;justify-content:center;animation:ringPulse 2.6s var(--ease-s) infinite}
+    .touch-ring-inner{width:28px;height:28px;border-radius:50%;background:rgba(212,175,55,.10);border:1px solid rgba(212,175,55,.60)}
+    @keyframes ringPulse{0%,100%{box-shadow:0 0 0 0 var(--gold-glow)}55%{box-shadow:0 0 0 12px rgba(212,175,55,0)}}
+    .touch-label{font-size:.6rem;letter-spacing:.32em;text-transform:uppercase;color:rgba(255,255,255,.35)}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    #reconnect-banner{position:fixed;top:0;left:0;right:0;z-index:25;display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 24px;background:rgba(40,18,0,.90);border-bottom:1px solid rgba(251,146,60,.25);backdrop-filter:blur(14px);transform:translateY(-100%);transition:transform .55s var(--ease)}
+    body.bridge-reconnecting #reconnect-banner{transform:translateY(0)}
+    .banner-dot{width:7px;height:7px;border-radius:50%;background:#fb923c;flex-shrink:0;animation:dotPulse 1.4s ease infinite}
+    #reconnect-banner span{font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(253,186,116,.80)}
+    #ai-hud{position:fixed;top:24px;right:24px;z-index:20;display:flex;align-items:center;gap:9px;background:rgba(5,5,10,.75);border:1px solid rgba(255,255,255,.07);border-radius:30px;padding:9px 18px;backdrop-filter:blur(16px);transition:right .5s var(--ease),border-color .5s ease,box-shadow .5s ease}
+    body.pass-open #ai-hud{right:calc(330px + 24px)}
+    body.bridge-reconnecting #ai-hud{border-color:rgba(251,146,60,.35);box-shadow:0 0 18px rgba(251,146,60,.12)}
+    #ai-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.15);flex-shrink:0;transition:background .4s ease,box-shadow .4s ease}
+    #ai-label{font-size:.6rem;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.30);transition:color .4s ease;white-space:nowrap}
+    #ai-hud.s-idle #ai-dot{background:rgba(255,255,255,.22)}
+    #ai-hud.s-idle #ai-label{color:rgba(255,255,255,.30)}
+    #ai-hud.s-listening #ai-dot{background:#4ade80;box-shadow:0 0 10px #4ade80;animation:dotPulse 1s ease infinite}
+    #ai-hud.s-listening #ai-label{color:#4ade80}
+    #ai-hud.s-thinking #ai-dot{background:var(--gold);box-shadow:0 0 10px var(--gold);animation:dotPulse .7s ease infinite}
+    #ai-hud.s-thinking #ai-label{color:#F0D060}
+    #ai-hud.s-speaking #ai-dot{background:#a78bfa;box-shadow:0 0 10px #a78bfa;animation:dotPulse .45s ease infinite}
+    #ai-hud.s-speaking #ai-label{color:#c4b5fd}
+    #ai-hud.s-executing #ai-dot{background:#60a5fa;box-shadow:0 0 10px #60a5fa;animation:dotSpin .55s linear infinite}
+    #ai-hud.s-executing #ai-label{color:#93c5fd}
+    #ai-hud.s-reconnecting #ai-dot{background:#fb923c;box-shadow:0 0 12px rgba(251,146,60,.7);animation:dotPulse 1.6s ease infinite}
+    #ai-hud.s-reconnecting #ai-label{color:#fdba74}
+    #ai-hud.s-guest #ai-dot{background:#fb923c;box-shadow:0 0 8px rgba(251,146,60,.5);animation:dotPulse 2.4s ease infinite}
+    #ai-hud.s-guest #ai-label{color:#fdba74}
+    @keyframes dotPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.65);opacity:.5}}
+    @keyframes dotSpin{to{transform:rotate(360deg)}}
+    #session-bar{position:fixed;bottom:36px;left:50%;transform:translateX(-50%) translateY(20px);z-index:10;display:flex;align-items:center;gap:20px;background:rgba(5,5,10,.65);border:1px solid rgba(212,175,55,.18);border-radius:60px;padding:14px 28px;backdrop-filter:blur(var(--blur));opacity:0;pointer-events:none;transition:opacity .7s var(--ease),transform .7s var(--ease)}
+    body.call-active #session-bar{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+    #waveform{display:flex;align-items:center;gap:3px;height:22px}
+    #waveform span{display:block;width:3px;border-radius:2px;background:var(--gold);height:5px}
+    #waveform span:nth-child(1){animation:wave 1.3s 0s ease-in-out infinite}
+    #waveform span:nth-child(2){animation:wave 1.3s .15s ease-in-out infinite}
+    #waveform span:nth-child(3){animation:wave 1.3s .30s ease-in-out infinite}
+    #waveform span:nth-child(4){animation:wave 1.3s .45s ease-in-out infinite}
+    #waveform span:nth-child(5){animation:wave 1.3s .60s ease-in-out infinite}
+    @keyframes wave{0%,100%{height:4px;opacity:.35}50%{height:18px;opacity:1}}
+    body.st-listening #waveform span{animation-duration:.7s}
+    body.st-speaking #waveform span{animation-duration:.45s}
+    body.st-thinking #waveform span{opacity:.2!important;height:4px!important;animation:none}
+    #session-label{font-size:.62rem;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.40);white-space:nowrap}
+    #end-btn{padding:9px 22px;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;background:rgba(255,65,43,.10);color:rgba(255,100,80,.90);border:1px solid rgba(255,65,43,.30);border-radius:30px;cursor:pointer;transition:all .3s ease}
+    #end-btn:hover{background:rgba(255,65,43,.22);box-shadow:0 0 18px rgba(255,65,43,.2)}
+    #the-pass{position:fixed;bottom:48px;right:52px;z-index:12;display:flex;flex-direction:column;align-items:flex-end;gap:12px;transform:translateY(120%) translateX(20px);opacity:0;pointer-events:none;transition:transform 1s var(--ease),opacity .8s var(--ease)}
+    #the-pass.open{transform:translateY(0) translateX(0);opacity:1;pointer-events:auto}
+    .pass-label{font-size:.58rem;letter-spacing:.35em;text-transform:uppercase;color:rgba(212,175,55,.60);text-align:right}
+    .pass-card{background:rgba(255,255,255,.97);border-radius:18px;padding:20px 22px;text-align:center;box-shadow:0 28px 80px rgba(0,0,0,.55),0 0 0 1px rgba(212,175,55,.35),0 0 40px rgba(212,175,55,.10);animation:passReveal .9s var(--ease) both}
+    @keyframes passReveal{from{transform:scale(.90) rotate(-1.5deg);filter:blur(4px);opacity:0}to{transform:scale(1) rotate(0deg);filter:blur(0);opacity:1}}
+    .pass-card h3{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;color:#111;margin-bottom:14px;letter-spacing:.04em}
+    .pass-card img{display:block;border-radius:8px}
+    .pass-card-sub{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:#555;margin-top:12px}
+    .pass-dismiss{font-size:.56rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.25);background:none;border:none;cursor:pointer;padding:4px 0;transition:color .3s ease}
+    .pass-dismiss:hover{color:rgba(255,255,255,.60)}
+    #guest-overlay{position:fixed;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .8s var(--ease)}
+    body.guest-mode #guest-overlay{opacity:1;pointer-events:auto}
+    .guest-card{background:rgba(5,5,10,.60);border:1px solid rgba(212,175,55,.20);border-radius:24px;padding:40px 52px;backdrop-filter:blur(var(--blur));text-align:center;max-width:440px;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.50),inset 0 1px 0 rgba(212,175,55,.10)}
+    .guest-card::before,.guest-card::after{content:'';position:absolute;width:28px;height:28px;border-color:rgba(212,175,55,.3);border-style:solid}
+    .guest-card::before{top:16px;left:16px;border-width:1px 0 0 1px}
+    .guest-card::after{bottom:16px;right:16px;border-width:0 1px 1px 0}
+    .guest-eyebrow{font-size:.56rem;letter-spacing:.5em;text-transform:uppercase;color:rgba(251,146,60,.80);margin-bottom:10px}
+    .guest-title{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:300;letter-spacing:.06em;color:white;margin-bottom:10px}
+    .guest-body{font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.28);line-height:2.2;margin-bottom:28px}
+    #reconnect-btn{display:inline-flex;align-items:center;gap:10px;padding:15px 44px;font-family:'Montserrat',sans-serif;font-size:.66rem;font-weight:700;letter-spacing:.3em;text-transform:uppercase;background:transparent;color:var(--gold);border:1px solid rgba(212,175,55,.45);border-radius:50px;cursor:pointer;position:relative;overflow:hidden;transition:all .35s ease}
+    #reconnect-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--gold),#b8941f);transform:scaleX(0);transform-origin:left;transition:transform .4s var(--ease);z-index:-1}
+    #reconnect-btn:hover{color:#000;box-shadow:0 0 32px var(--gold-glow)}
+    #reconnect-btn:hover::before{transform:scaleX(1)}
+    #reconnect-btn:disabled{opacity:.35;cursor:not-allowed}
+    .reconnect-spinner{display:none;width:13px;height:13px;border-radius:50%;border:2px solid rgba(0,0,0,.2);border-top-color:currentColor;animation:spin .65s linear infinite}
+    #reconnect-btn.retrying .reconnect-spinner{display:block}
+    #reconnect-btn.retrying .reconnect-text{opacity:.65}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #tap-zone{position:fixed;inset:0;z-index:7;cursor:pointer}
+    body.call-active #tap-zone,body.guest-mode #tap-zone,body.bridge-reconnecting #tap-zone{pointer-events:none}
+    #signature{position:fixed;bottom:20px;left:0;right:0;text-align:center;z-index:6;pointer-events:none;opacity:0;animation:fadeIn 1.5s 1.4s ease forwards;transition:opacity .8s ease}
+    body.call-active #signature{opacity:0}
+    #signature span{font-size:.5rem;letter-spacing:.5em;text-transform:uppercase;color:rgba(255,255,255,.18)}
+    /* Attraction Card */
+    #attraction-card{position:fixed;bottom:48px;left:52px;z-index:11;width:300px;border-radius:20px;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,.60),0 0 0 1px rgba(212,175,55,.25);transform:translateY(120%) translateX(-20px);opacity:0;pointer-events:none;transition:transform 1s var(--ease),opacity .8s var(--ease)}
+    #attraction-card.open{transform:translateY(0) translateX(0);opacity:1;pointer-events:auto}
+    #attraction-img{display:block;width:100%;height:200px;object-fit:cover;object-position:center}
+    .attraction-body{background:linear-gradient(135deg,rgba(5,5,10,.95),rgba(20,14,0,.95));padding:18px 20px 14px;border-top:1px solid rgba(212,175,55,.20)}
+    .attraction-name{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:600;color:white;letter-spacing:.04em;margin-bottom:5px}
+    .attraction-fact{font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.50);line-height:1.7;margin-bottom:10px}
+    .attraction-price{font-size:.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+    .attraction-dismiss{position:absolute;top:10px;right:12px;font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.45);background:rgba(0,0,0,.40);border:none;border-radius:20px;padding:4px 10px;cursor:pointer;transition:color .3s ease}
+    .attraction-dismiss:hover{color:white}
   </style>
 </head>
 <body>
@@ -149,6 +164,15 @@
     <span id="session-label">Connecting...</span>
     <button id="end-btn">End Session</button>
   </div>
+  <div id="attraction-card">
+    <img id="attraction-img" src="" alt="">
+    <div class="attraction-body">
+      <div class="attraction-name" id="attraction-name">—</div>
+      <div class="attraction-fact" id="attraction-fact">—</div>
+      <div class="attraction-price" id="attraction-price">—</div>
+    </div>
+    <button class="attraction-dismiss" id="attraction-dismiss">Dismiss ✕</button>
+  </div>
   <div id="the-pass">
     <span class="pass-label">Scan to Connect on WhatsApp</span>
     <div class="pass-card">
@@ -160,250 +184,106 @@
   </div>
   <div id="tap-zone"></div>
   <div id="signature"><span>Luxury Travel · Storytelling · AI-Optimized Experiences ™</span></div>
-
   <script type="module">
     import Vapi from "https://esm.sh/@vapi-ai/web@2.5.2";
     window.Vapi = Vapi.default || Vapi;
   </script>
-
   <script>
-    const RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
-    const VAPI_PUBLIC_KEY   = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
-    const ASSISTANT_ID      = "fcb09257-e877-494d-a7c9-d3a152da0059";
-    const WHATSAPP_NUMBER   = "971506313291";
-
-    const tapZone      = document.getElementById('tap-zone');
-    const sessionLabel = document.getElementById('session-label');
-    const endBtn       = document.getElementById('end-btn');
-    const passTourName = document.getElementById('pass-tour-name');
-    const passQrImg    = document.getElementById('pass-qr-img');
-    const passDismiss  = document.getElementById('pass-dismiss');
-    const aiHud        = document.getElementById('ai-hud');
-    const aiLabel      = document.getElementById('ai-label');
-    const reconnectBtn = document.getElementById('reconnect-btn');
-
-    const HUD_MAP = {
-      idle:         { cls: 's-idle',         lbl: 'System Online' },
-      listening:    { cls: 's-listening',    lbl: 'Listening...' },
-      thinking:     { cls: 's-thinking',     lbl: 'Thinking...' },
-      speaking:     { cls: 's-speaking',     lbl: 'Speaking...' },
-      executing:    { cls: 's-executing',    lbl: 'Preparing...' },
-      reconnecting: { cls: 's-reconnecting', lbl: 'Reconnecting to Bridge...' },
-      guest:        { cls: 's-guest',        lbl: 'Guest Mode' },
+    var RENDER_BRIDGE_URL="https://kiosk-bridge.onrender.com";
+    var VAPI_PUBLIC_KEY="3bfe6c30-430a-4ee2-b584-7044d5adab0a";
+    var ASSISTANT_ID="fcb09257-e877-494d-a7c9-d3a152da0059";
+    var WHATSAPP_NUMBER="971506313291";
+    var ATTRACTIONS={
+      burj_khalifa:{name:"Burj Khalifa",img:"https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80",fact:"World's tallest building · 828m · 360° views",price:"From AED 181 / USD 49"},
+      desert_safari:{name:"Desert Safari",img:"https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=600&q=80",fact:"Dune bashing · BBQ dinner · Live shows",price:"From AED 140 / USD 38"},
+      palm_jumeirah:{name:"Palm Jumeirah",img:"https://images.unsplash.com/photo-1582672060674-bc2bd808a8b5?w=600&q=80",fact:"Iconic palm island · Atlantis · Beach clubs",price:"From AED 350 / USD 95"},
+      dubai_mall:{name:"Dubai Mall",img:"https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?w=600&q=80",fact:"World's largest mall · 1,200+ stores · Aquarium",price:"Free entry"},
+      dhow_cruise:{name:"Dhow Cruise",img:"https://images.unsplash.com/photo-1578895101408-1a36b834405b?w=600&q=80",fact:"5-star buffet · 2-hour cruise · Tanoura show",price:"From AED 140 / USD 38"}
     };
-
-    function setAIState(key) {
-      const s = HUD_MAP[key] || HUD_MAP.idle;
-      aiHud.className = s.cls;
-      aiLabel.textContent = s.lbl;
-      document.body.classList.remove('st-listening', 'st-speaking', 'st-thinking');
-      if (key === 'listening') document.body.classList.add('st-listening');
-      if (key === 'speaking')  document.body.classList.add('st-speaking');
-      if (key === 'thinking')  document.body.classList.add('st-thinking');
-      const bar = { listening: 'Listening to You...', thinking: 'Thinking...', speaking: 'Your Agent is Speaking', executing: 'Preparing Your Info...', idle: 'Connected' };
-      if (bar[key]) sessionLabel.textContent = bar[key];
-    }
-
-    function setVibe(v) {
-      document.body.classList.remove('vibe-rain', 'vibe-luxury', 'vibe-adventure');
-      if (v) document.body.classList.add('vibe-' + v);
-    }
-
-    function openPass(name, url) {
-      passTourName.textContent = name || 'Your Experience';
-      passQrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
-      document.getElementById('the-pass').classList.add('open');
-      document.body.classList.add('pass-open');
-    }
-
-    function closePass() {
-      document.getElementById('the-pass').classList.remove('open');
-      document.body.classList.remove('pass-open');
-    }
-
-    passDismiss.addEventListener('click', closePass);
-
-    const socket = io(RENDER_BRIDGE_URL, {
-      transports: ['polling', 'websocket'], rememberUpgrade: true, timeout: 20000,
-      reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 2000,
-      reconnectionDelayMax: 10000, rejectUnauthorized: false,
-    });
-
-    let flashTimer = null;
-
-    socket.on('connect', () => {
-      document.body.classList.remove('bridge-reconnecting');
-      if (!document.body.classList.contains('guest-mode') && !document.body.classList.contains('call-active')) {
-        setAIState('idle');
-        aiHud.style.borderColor = 'rgba(74,222,128,0.5)';
-        aiHud.style.boxShadow   = '0 0 18px rgba(74,222,128,0.15)';
-        clearTimeout(flashTimer);
-        flashTimer = setTimeout(() => { aiHud.style.borderColor = ''; aiHud.style.boxShadow = ''; }, 1800);
-      }
-      console.log('Socket | ID: ' + socket.id + ' | Transport: ' + socket.io.engine.transport.name);
-    });
-
-    socket.on('disconnect', () => {
-      document.body.classList.add('bridge-reconnecting');
-      if (!document.body.classList.contains('call-active')) setAIState('reconnecting');
-    });
-
-    socket.on('connect_error', (err) => {
-      document.body.classList.add('bridge-reconnecting');
-      if (!document.body.classList.contains('call-active')) setAIState('reconnecting');
-      console.error('Socket error: ' + err.message);
-    });
-
-    socket.on('AI_STATE_UPDATE', ({ state }) => {
-      if (document.body.classList.contains('guest-mode')) return;
-      const map = { LISTENING: 'listening', THINKING: 'thinking', SPEAKING: 'speaking', EXECUTING: 'executing', IDLE: 'idle' };
-      setAIState(map[state] || 'idle');
-    });
-
-    socket.on('COMMAND_UPDATE_UI', ({ viewType, tourName, qrUrl, vibe }) => {
-      setVibe(vibe);
-      if (!document.body.classList.contains('guest-mode')) setAIState('executing');
-      const delay = vibe === 'luxury' ? 1800 : 600;
-      if (viewType === 'tour_details' || viewType === 'booking_qr') {
-        setTimeout(() => { openPass(tourName, qrUrl); setAIState('idle'); }, delay);
-      } else {
-        setTimeout(() => setAIState('idle'), delay);
-      }
-    });
-
-    function activateGuestMode() {
-      document.body.classList.add('guest-mode');
-      tapZone.style.pointerEvents = 'none';
-      setAIState('guest');
-    }
-
-    reconnectBtn.addEventListener('click', () => {
-      reconnectBtn.disabled = true;
-      reconnectBtn.classList.add('retrying');
-      setTimeout(() => window.location.reload(), 500);
-    });
-
-    let wakeLock = null;
-    async function requestWakeLock() {
-      try {
-        if ('wakeLock' in navigator) {
-          wakeLock = await navigator.wakeLock.request('screen');
-          console.log('Screen Wake Lock is active');
-        }
-      } catch (err) {
-        console.error('Wake Lock error: ' + err.name + ', ' + err.message);
-      }
-    }
-    document.addEventListener('visibilitychange', () => {
-      if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
-    });
+    var tapZone=document.getElementById('tap-zone'),sessionLabel=document.getElementById('session-label'),endBtn=document.getElementById('end-btn'),passTourName=document.getElementById('pass-tour-name'),passQrImg=document.getElementById('pass-qr-img'),passDismiss=document.getElementById('pass-dismiss'),aiHud=document.getElementById('ai-hud'),aiLabel=document.getElementById('ai-label'),reconnectBtn=document.getElementById('reconnect-btn'),attrCard=document.getElementById('attraction-card'),attrImg=document.getElementById('attraction-img'),attrName=document.getElementById('attraction-name'),attrFact=document.getElementById('attraction-fact'),attrPrice=document.getElementById('attraction-price'),attrDismiss=document.getElementById('attraction-dismiss'),attrTimer=null;
+    var HUD_MAP={idle:{cls:'s-idle',lbl:'System Online'},listening:{cls:'s-listening',lbl:'Listening...'},thinking:{cls:'s-thinking',lbl:'Thinking...'},speaking:{cls:'s-speaking',lbl:'Speaking...'},executing:{cls:'s-executing',lbl:'Preparing...'},reconnecting:{cls:'s-reconnecting',lbl:'Reconnecting to Bridge...'},guest:{cls:'s-guest',lbl:'Guest Mode'}};
+    function setAIState(k){var s=HUD_MAP[k]||HUD_MAP.idle;aiHud.className=s.cls;aiLabel.textContent=s.lbl;document.body.classList.remove('st-listening','st-speaking','st-thinking');if(k==='listening')document.body.classList.add('st-listening');if(k==='speaking')document.body.classList.add('st-speaking');if(k==='thinking')document.body.classList.add('st-thinking');var b={listening:'Listening to You...',thinking:'Thinking...',speaking:'Your Agent is Speaking',executing:'Preparing Your Info...',idle:'Connected'};if(b[k])sessionLabel.textContent=b[k];}
+    function setVibe(v){document.body.classList.remove('vibe-rain','vibe-luxury','vibe-adventure');if(v)document.body.classList.add('vibe-'+v);}
+    function showAttraction(id){var d=ATTRACTIONS[id]||ATTRACTIONS['burj_khalifa'];attrImg.src=d.img;attrImg.alt=d.name;attrName.textContent=d.name;attrFact.textContent=d.fact;attrPrice.textContent=d.price;attrCard.classList.add('open');clearTimeout(attrTimer);attrTimer=setTimeout(closeAttraction,20000);console.log('[Kiosk] Attraction shown:',id);}
+    function closeAttraction(){clearTimeout(attrTimer);attrCard.classList.remove('open');}
+    attrDismiss.addEventListener('click',closeAttraction);
+    function openPass(name,url){passTourName.textContent=name||'Your Experience';passQrImg.src='https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(url);document.getElementById('the-pass').classList.add('open');document.body.classList.add('pass-open');closeAttraction();}
+    function closePass(){document.getElementById('the-pass').classList.remove('open');document.body.classList.remove('pass-open');}
+    passDismiss.addEventListener('click',closePass);
+    var socket=io(RENDER_BRIDGE_URL,{transports:['polling','websocket'],rememberUpgrade:true,timeout:20000,reconnection:true,reconnectionAttempts:Infinity,reconnectionDelay:2000,reconnectionDelayMax:10000,rejectUnauthorized:false});
+    var flashTimer=null;
+    socket.on('connect',function(){document.body.classList.remove('bridge-reconnecting');if(!document.body.classList.contains('guest-mode')&&!document.body.classList.contains('call-active')){setAIState('idle');aiHud.style.borderColor='rgba(74,222,128,0.5)';aiHud.style.boxShadow='0 0 18px rgba(74,222,128,0.15)';clearTimeout(flashTimer);flashTimer=setTimeout(function(){aiHud.style.borderColor='';aiHud.style.boxShadow='';},1800);}console.log('Socket | ID: '+socket.id+' | Transport: '+socket.io.engine.transport.name);});
+    socket.on('disconnect',function(){document.body.classList.add('bridge-reconnecting');if(!document.body.classList.contains('call-active'))setAIState('reconnecting');});
+    socket.on('connect_error',function(err){document.body.classList.add('bridge-reconnecting');if(!document.body.classList.contains('call-active'))setAIState('reconnecting');console.error('Socket error: '+err.message);});
+    socket.on('AI_STATE_UPDATE',function(d){if(document.body.classList.contains('guest-mode'))return;var m={LISTENING:'listening',THINKING:'thinking',SPEAKING:'speaking',EXECUTING:'executing',IDLE:'idle'};setAIState(m[d.state]||'idle');});
+    socket.on('COMMAND_UPDATE_UI',function(d){setVibe(d.vibe);if(!document.body.classList.contains('guest-mode'))setAIState('executing');var delay=d.vibe==='luxury'?1800:600;if(d.viewType==='tour_details'||d.viewType==='booking_qr'){setTimeout(function(){openPass(d.tourName,d.qrUrl);setAIState('idle');},delay);}else{setTimeout(function(){setAIState('idle');},delay);}});
+    function activateGuestMode(){document.body.classList.add('guest-mode');tapZone.style.pointerEvents='none';setAIState('guest');}
+    reconnectBtn.addEventListener('click',function(){reconnectBtn.disabled=true;reconnectBtn.classList.add('retrying');setTimeout(function(){window.location.reload();},500);});
+    var wakeLock=null;
+    async function requestWakeLock(){try{if('wakeLock'in navigator){wakeLock=await navigator.wakeLock.request('screen');console.log('Screen Wake Lock is active');}}catch(err){console.error('Wake Lock error: '+err.name+', '+err.message);}}
+    document.addEventListener('visibilitychange',function(){if(wakeLock!==null&&document.visibilityState==='visible')requestWakeLock();});
     requestWakeLock();
-
-    function bootVapi() {
-      if (typeof window.Vapi !== 'undefined') {
-        document.body.classList.remove('guest-mode');
-        aiLabel.textContent = 'System Online';
-        console.log('Vapi CDN confirmed | ASSISTANT_ID: ' + ASSISTANT_ID);
-
-        const vapiInstance = new window.Vapi(VAPI_PUBLIC_KEY);
-        tapZone.style.pointerEvents = 'auto';
-        if (!document.body.classList.contains('bridge-reconnecting')) setAIState('idle');
-
-        tapZone.addEventListener('click', () => {
-          if (document.body.classList.contains('call-active')) return;
-          if (document.body.classList.contains('bridge-reconnecting')) return;
-          vapiInstance.start(ASSISTANT_ID);
-          sessionLabel.textContent = 'Connecting...';
-          setAIState('thinking');
-        });
-
-        endBtn.addEventListener('click', () => vapiInstance.stop());
-        vapiInstance.on('speech-start', () => setAIState('listening'));
-        vapiInstance.on('speech-end',   () => setAIState('thinking'));
-
-        // Transcript accumulator — captures guest name from conversation
-        // as a fallback when the AI tool call omits guest_name
-        window._capturedGuestName = "";
-        vapiInstance.on('message', function(m) {
-          if (m.type === 'transcript' && m.role === 'user' && m.transcriptType === 'final') {
-            var txt = m.transcript || '';
-            // Match "my name is X", "I am X", "I'm X", "this is X"
-            var match = txt.match(/(?:my name is|i am|i\'m|this is)\s+([a-z][a-z\s]{1,30})/i);
-            if (match && match[1]) {
-              var name = match[1].trim().replace(/\s+/g, ' ');
-              // Capitalise each word
-              window._capturedGuestName = name.replace(/\b\w/g, function(c) { return c.toUpperCase(); });
-              console.log("Guest name captured from transcript:", window._capturedGuestName);
+    function bootVapi(){
+      if(typeof window.Vapi==='undefined'){activateGuestMode();return;}
+      document.body.classList.remove('guest-mode');
+      aiLabel.textContent='System Online';
+      console.log('Vapi CDN confirmed | ASSISTANT_ID: '+ASSISTANT_ID);
+      var vapiInstance=new window.Vapi(VAPI_PUBLIC_KEY);
+      tapZone.style.pointerEvents='auto';
+      if(!document.body.classList.contains('bridge-reconnecting'))setAIState('idle');
+      tapZone.addEventListener('click',function(){if(document.body.classList.contains('call-active'))return;if(document.body.classList.contains('bridge-reconnecting'))return;vapiInstance.start(ASSISTANT_ID);sessionLabel.textContent='Connecting...';setAIState('thinking');});
+      endBtn.addEventListener('click',function(){vapiInstance.stop();});
+      vapiInstance.on('speech-start',function(){setAIState('listening');});
+      vapiInstance.on('speech-end',function(){setAIState('thinking');});
+      window._capturedGuestName='';
+      vapiInstance.on('message',function(m){if(m.type==='transcript'&&m.role==='user'&&m.transcriptType==='final'){var txt=m.transcript||'';var match=txt.match(/(?:my name is|i am|i'm|this is)s+([a-z][a-zs]{1,30})/i);if(match&&match[1]){var n=match[1].trim().replace(/s+/g,' ');window._capturedGuestName=n.replace(/w/g,function(c){return c.toUpperCase();});console.log('Guest name captured from transcript:',window._capturedGuestName);}}});
+      vapiInstance.on('message',function(msg){
+        if(msg.type==='speech-update'){if(msg.role==='assistant'&&msg.status==='started')setAIState('speaking');if(msg.role==='assistant'&&msg.status==='stopped')setAIState('idle');}
+        if(msg.type==='tool-calls'){
+          var calls=msg.toolCalls||[];
+          for(var i=0;i<calls.length;i++){
+            var call=calls[i];
+            var fnName=call.function&&call.function.name;
+            var rawArgs=call.function&&call.function.arguments;
+            var args=(typeof rawArgs==='object'&&rawArgs!==null)?rawArgs:{};
+            if(typeof rawArgs==='string'){try{args=JSON.parse(rawArgs);}catch(e){}}
+            if(fnName==='show_attraction'){
+              var attrId=args.attraction_id||args.attractionId||'burj_khalifa';
+              showAttraction(attrId);
+              if(args.mood)setVibe(args.mood==='gold'?'luxury':args.mood==='blue'?'rain':'adventure');
             }
-          }
-        });
+            if(fnName==='send_booking_to_human'){
+              var tourName=args.tour_type||args.tourType||args.tourName||'Desert Safari';
+              var guest=args.guest_name||args.guestName||args.name||window._capturedGuestName||'';
+              var date=args.preferred_date||args.preferredDate||args.date||'';
+              var pax=String(args.pax||args.pax_count||'');
+              console.log('[Kiosk] Booking:',{guest:guest,tourName:tourName,date:date,pax:pax});
+              var waMessage="Marhaba! Booking request from AI Kiosk.
 
-        vapiInstance.on('message', (msg) => {
-          if (msg.type === 'speech-update') {
-            if (msg.role === 'assistant' && msg.status === 'started') setAIState('speaking');
-            if (msg.role === 'assistant' && msg.status === 'stopped')  setAIState('idle');
-          }
-          if (msg.type === 'tool-calls') {
-            console.log('[Kiosk] Tool call received:', JSON.stringify(msg));
-            const call = msg.toolCalls?.[0];
-            if (call && call.function?.name === 'send_booking_to_human') {
-              var rawArgs = call.function.arguments;
-              var args = (typeof rawArgs === 'object' && rawArgs !== null) ? rawArgs : {};
-              if (typeof rawArgs === 'string') { try { args = JSON.parse(rawArgs); } catch(e) {} }
-              
-              // Support both snake_case and camelCase keys from Vapi
-              const tourName    = args.tourName       || args.tour_type      || args.tourType || 'Desert Safari';
-              const guest       = args.guest_name     || args.guestName      || args.name     || 'Unknown';
-              const date        = args.preferred_date || args.preferredDate  || args.date     || 'Not specified';
-              const pax         = args.pax            || args.pax_count      || 'Not specified';
-              const preferences = args.preferences    || args.notes          || args.special_requests || '';
+Tour: "+tourName;
+              if(guest)waMessage+="
+Guest: "+guest;
+              if(date)waMessage+="
+Date: "+date;
+              if(pax)waMessage+="
+Pax: "+pax;
+              waMessage+="
 
-              console.log('[Kiosk] Extracted values:', { guest, tourName, date, pax });
-
-              const waMessage = "Hi! I'd like to book the " + tourName + " for " + guest + (date !== 'Not specified' ? " on " + date : "") + (pax !== 'Not specified' ? " (" + pax + " pax)" : "") + ". Please confirm availability.";
-              const waUrl = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(waMessage);
-              
-              openPass(tourName, waUrl);
+Please confirm availability. Shukran!";
+              var waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(waMessage);
+              openPass(tourName,waUrl);
               setVibe('luxury');
-              
-              socket.emit('BOOKING_CONFIRMED', {
-                  guest: guest,
-                  tourName: tourName,
-                  date: date,
-                  pax: pax,
-                  qrUrl: waUrl
-              });
-              console.log('[Kiosk] Emitted BOOKING_CONFIRMED');
-              console.log('Booking captured:', tourName, guest, date, pax);
+              socket.emit('BOOKING_CONFIRMED',{guest:guest||'Guest',tourName:tourName,date:date||'Not specified',pax:pax||'Not specified',qrUrl:waUrl});
+              console.log('[Kiosk] BOOKING_CONFIRMED emitted');
             }
           }
-        });
-
-        vapiInstance.on('call-start', () => {
-          document.body.classList.add('call-active');
-          sessionLabel.textContent = 'Connected';
-          setAIState('idle');
-        });
-        vapiInstance.on('call-end', () => {
-          document.body.classList.remove('call-active');
-          setVibe(null); closePass(); setAIState('idle');
-          tapZone.style.pointerEvents = 'auto';
-        });
-        vapiInstance.on('error', (err) => {
-          console.error('Vapi error:', err);
-          document.body.classList.remove('call-active');
-          setAIState('idle');
-        });
-      } else {
-        activateGuestMode();
-      }
+        }
+      });
+      vapiInstance.on('call-start',function(){document.body.classList.add('call-active');sessionLabel.textContent='Connected';setAIState('idle');});
+      vapiInstance.on('call-end',function(){document.body.classList.remove('call-active');setVibe(null);closePass();closeAttraction();setAIState('idle');tapZone.style.pointerEvents='auto';});
+      vapiInstance.on('error',function(err){console.error('Vapi error:',err);document.body.classList.remove('call-active');setAIState('idle');});
     }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', bootVapi);
-    } else {
-      bootVapi();
-    }
+    if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',bootVapi);}else{bootVapi();}
   </script>
 </body>
 </html>
