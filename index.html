@@ -122,7 +122,6 @@
     #signature{position:fixed;bottom:20px;left:0;right:0;text-align:center;z-index:6;pointer-events:none;opacity:0;animation:fadeIn 1.5s 1.4s ease forwards;transition:opacity .8s ease}
     body.call-active #signature{opacity:0}
     #signature span{font-size:.5rem;letter-spacing:.5em;text-transform:uppercase;color:rgba(255,255,255,.18)}
-    /* Attraction Card */
     #attraction-card{position:fixed;bottom:48px;left:52px;z-index:11;width:300px;border-radius:20px;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,.60),0 0 0 1px rgba(212,175,55,.25);transform:translateY(120%) translateX(-20px);opacity:0;pointer-events:none;transition:transform 1s var(--ease),opacity .8s var(--ease)}
     #attraction-card.open{transform:translateY(0) translateX(0);opacity:1;pointer-events:auto}
     #attraction-img{display:block;width:100%;height:200px;object-fit:cover;object-position:center}
@@ -167,11 +166,11 @@
   <div id="attraction-card">
     <img id="attraction-img" src="" alt="">
     <div class="attraction-body">
-      <div class="attraction-name" id="attraction-name">—</div>
-      <div class="attraction-fact" id="attraction-fact">—</div>
-      <div class="attraction-price" id="attraction-price">—</div>
+      <div class="attraction-name" id="attraction-name">-</div>
+      <div class="attraction-fact" id="attraction-fact">-</div>
+      <div class="attraction-price" id="attraction-price">-</div>
     </div>
-    <button class="attraction-dismiss" id="attraction-dismiss">Dismiss ✕</button>
+    <button class="attraction-dismiss" id="attraction-dismiss">Dismiss X</button>
   </div>
   <div id="the-pass">
     <span class="pass-label">Scan to Connect on WhatsApp</span>
@@ -180,125 +179,307 @@
       <img id="pass-qr-img" src="" alt="Scan to WhatsApp" width="220" height="220">
       <p class="pass-card-sub">Scan with your phone to confirm</p>
     </div>
-    <button class="pass-dismiss" id="pass-dismiss">Dismiss ✕</button>
+    <button class="pass-dismiss" id="pass-dismiss">Dismiss X</button>
   </div>
   <div id="tap-zone"></div>
-  <div id="signature"><span>Luxury Travel · Storytelling · AI-Optimized Experiences ™</span></div>
+  <div id="signature"><span>Luxury Travel - Storytelling - AI-Optimized Experiences</span></div>
   <script type="module">
     import Vapi from "https://esm.sh/@vapi-ai/web@2.5.2";
     window.Vapi = Vapi.default || Vapi;
   </script>
   <script>
-    var RENDER_BRIDGE_URL="https://kiosk-bridge.onrender.com";
-    var VAPI_PUBLIC_KEY="3bfe6c30-430a-4ee2-b584-7044d5adab0a";
-    var ASSISTANT_ID="fcb09257-e877-494d-a7c9-d3a152da0059";
-    var WHATSAPP_NUMBER="971506313291";
-    var ATTRACTIONS={
-      burj_khalifa:{name:"Burj Khalifa",img:"https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80",fact:"World's tallest building · 828m · 360° views",price:"From AED 181 / USD 49"},
-      desert_safari:{name:"Desert Safari",img:"https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=600&q=80",fact:"Dune bashing · BBQ dinner · Live shows",price:"From AED 140 / USD 38"},
-      palm_jumeirah:{name:"Palm Jumeirah",img:"https://images.unsplash.com/photo-1582672060674-bc2bd808a8b5?w=600&q=80",fact:"Iconic palm island · Atlantis · Beach clubs",price:"From AED 350 / USD 95"},
-      dubai_mall:{name:"Dubai Mall",img:"https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?w=600&q=80",fact:"World's largest mall · 1,200+ stores · Aquarium",price:"Free entry"},
-      dhow_cruise:{name:"Dhow Cruise",img:"https://images.unsplash.com/photo-1578895101408-1a36b834405b?w=600&q=80",fact:"5-star buffet · 2-hour cruise · Tanoura show",price:"From AED 140 / USD 38"}
+    var RENDER_BRIDGE_URL = "https://kiosk-bridge.onrender.com";
+    var VAPI_PUBLIC_KEY   = "3bfe6c30-430a-4ee2-b584-7044d5adab0a";
+    var ASSISTANT_ID      = "fcb09257-e877-494d-a7c9-d3a152da0059";
+    var WHATSAPP_NUMBER   = "971506313291";
+
+    var ATTRACTIONS = {
+      burj_khalifa:  {name:"Burj Khalifa",  img:"https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80", fact:"Worlds tallest building - 828m - 360 degree views", price:"From AED 181 / USD 49"},
+      desert_safari: {name:"Desert Safari", img:"https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=600&q=80", fact:"Dune bashing - BBQ dinner - Live shows",             price:"From AED 140 / USD 38"},
+      palm_jumeirah: {name:"Palm Jumeirah", img:"https://images.unsplash.com/photo-1582672060674-bc2bd808a8b5?w=600&q=80", fact:"Iconic palm island - Atlantis - Beach clubs",         price:"From AED 350 / USD 95"},
+      dubai_mall:    {name:"Dubai Mall",    img:"https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?w=600&q=80", fact:"Worlds largest mall - 1200 stores - Aquarium",       price:"Free entry"},
+      dhow_cruise:   {name:"Dhow Cruise",   img:"https://images.unsplash.com/photo-1578895101408-1a36b834405b?w=600&q=80", fact:"5-star buffet - 2-hour cruise - Tanoura show",      price:"From AED 140 / USD 38"}
     };
-    var tapZone=document.getElementById('tap-zone'),sessionLabel=document.getElementById('session-label'),endBtn=document.getElementById('end-btn'),passTourName=document.getElementById('pass-tour-name'),passQrImg=document.getElementById('pass-qr-img'),passDismiss=document.getElementById('pass-dismiss'),aiHud=document.getElementById('ai-hud'),aiLabel=document.getElementById('ai-label'),reconnectBtn=document.getElementById('reconnect-btn'),attrCard=document.getElementById('attraction-card'),attrImg=document.getElementById('attraction-img'),attrName=document.getElementById('attraction-name'),attrFact=document.getElementById('attraction-fact'),attrPrice=document.getElementById('attraction-price'),attrDismiss=document.getElementById('attraction-dismiss'),attrTimer=null;
-    var HUD_MAP={idle:{cls:'s-idle',lbl:'System Online'},listening:{cls:'s-listening',lbl:'Listening...'},thinking:{cls:'s-thinking',lbl:'Thinking...'},speaking:{cls:'s-speaking',lbl:'Speaking...'},executing:{cls:'s-executing',lbl:'Preparing...'},reconnecting:{cls:'s-reconnecting',lbl:'Reconnecting to Bridge...'},guest:{cls:'s-guest',lbl:'Guest Mode'}};
-    function setAIState(k){var s=HUD_MAP[k]||HUD_MAP.idle;aiHud.className=s.cls;aiLabel.textContent=s.lbl;document.body.classList.remove('st-listening','st-speaking','st-thinking');if(k==='listening')document.body.classList.add('st-listening');if(k==='speaking')document.body.classList.add('st-speaking');if(k==='thinking')document.body.classList.add('st-thinking');var b={listening:'Listening to You...',thinking:'Thinking...',speaking:'Your Agent is Speaking',executing:'Preparing Your Info...',idle:'Connected'};if(b[k])sessionLabel.textContent=b[k];}
-    function setVibe(v){document.body.classList.remove('vibe-rain','vibe-luxury','vibe-adventure');if(v)document.body.classList.add('vibe-'+v);}
-    function showAttraction(id){var d=ATTRACTIONS[id]||ATTRACTIONS['burj_khalifa'];attrImg.src=d.img;attrImg.alt=d.name;attrName.textContent=d.name;attrFact.textContent=d.fact;attrPrice.textContent=d.price;attrCard.classList.add('open');clearTimeout(attrTimer);attrTimer=setTimeout(closeAttraction,20000);console.log('[Kiosk] Attraction shown:',id);}
-    function closeAttraction(){clearTimeout(attrTimer);attrCard.classList.remove('open');}
-    attrDismiss.addEventListener('click',closeAttraction);
-    function openPass(name,url){passTourName.textContent=name||'Your Experience';passQrImg.src='https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(url);document.getElementById('the-pass').classList.add('open');document.body.classList.add('pass-open');closeAttraction();}
-    function closePass(){document.getElementById('the-pass').classList.remove('open');document.body.classList.remove('pass-open');}
-    passDismiss.addEventListener('click',closePass);
-    var socket=io(RENDER_BRIDGE_URL,{transports:['polling','websocket'],rememberUpgrade:true,timeout:20000,reconnection:true,reconnectionAttempts:Infinity,reconnectionDelay:2000,reconnectionDelayMax:10000,rejectUnauthorized:false});
-    var flashTimer=null;
-    socket.on('connect',function(){document.body.classList.remove('bridge-reconnecting');if(!document.body.classList.contains('guest-mode')&&!document.body.classList.contains('call-active')){setAIState('idle');aiHud.style.borderColor='rgba(74,222,128,0.5)';aiHud.style.boxShadow='0 0 18px rgba(74,222,128,0.15)';clearTimeout(flashTimer);flashTimer=setTimeout(function(){aiHud.style.borderColor='';aiHud.style.boxShadow='';},1800);}console.log('Socket | ID: '+socket.id+' | Transport: '+socket.io.engine.transport.name);});
-    socket.on('disconnect',function(){document.body.classList.add('bridge-reconnecting');if(!document.body.classList.contains('call-active'))setAIState('reconnecting');});
-    socket.on('connect_error',function(err){document.body.classList.add('bridge-reconnecting');if(!document.body.classList.contains('call-active'))setAIState('reconnecting');console.error('Socket error: '+err.message);});
-    socket.on('AI_STATE_UPDATE',function(d){if(document.body.classList.contains('guest-mode'))return;var m={LISTENING:'listening',THINKING:'thinking',SPEAKING:'speaking',EXECUTING:'executing',IDLE:'idle'};setAIState(m[d.state]||'idle');});
-    socket.on('COMMAND_UPDATE_UI',function(d){setVibe(d.vibe);if(!document.body.classList.contains('guest-mode'))setAIState('executing');var delay=d.vibe==='luxury'?1800:600;if(d.viewType==='tour_details'||d.viewType==='booking_qr'){setTimeout(function(){openPass(d.tourName,d.qrUrl);setAIState('idle');},delay);}else{setTimeout(function(){setAIState('idle');},delay);}});
-    function activateGuestMode(){document.body.classList.add('guest-mode');tapZone.style.pointerEvents='none';setAIState('guest');}
-    reconnectBtn.addEventListener('click',function(){reconnectBtn.disabled=true;reconnectBtn.classList.add('retrying');setTimeout(function(){window.location.reload();},500);});
-    var wakeLock=null;
-    async function requestWakeLock(){try{if('wakeLock'in navigator){wakeLock=await navigator.wakeLock.request('screen');console.log('Screen Wake Lock is active');}}catch(err){console.error('Wake Lock error: '+err.name+', '+err.message);}}
-    document.addEventListener('visibilitychange',function(){if(wakeLock!==null&&document.visibilityState==='visible')requestWakeLock();});
-    requestWakeLock();
-    function bootVapi(){
-      if(typeof window.Vapi==='undefined'){activateGuestMode();return;}
-      document.body.classList.remove('guest-mode');
-      aiLabel.textContent='System Online';
-      console.log('Vapi CDN confirmed | ASSISTANT_ID: '+ASSISTANT_ID);
-      var vapiInstance=new window.Vapi(VAPI_PUBLIC_KEY);
-      tapZone.style.pointerEvents='auto';
-      if(!document.body.classList.contains('bridge-reconnecting'))setAIState('idle');
-      tapZone.addEventListener('click',function(){if(document.body.classList.contains('call-active'))return;if(document.body.classList.contains('bridge-reconnecting'))return;vapiInstance.start(ASSISTANT_ID);sessionLabel.textContent='Connecting...';setAIState('thinking');});
-      endBtn.addEventListener('click',function(){vapiInstance.stop();});
-      vapiInstance.on('speech-start',function(){setAIState('listening');});
-      vapiInstance.on('speech-end',function(){setAIState('thinking');});
-      window._capturedGuestName = "";
-  vapiInstance.on('message', function(m) {
-  if (m.type === 'transcript' && m.role === 'user' && m.transcriptType === 'final') {
-    var txt = m.transcript || '';
-    var pats = ['my name is ', 'i am ', "i'm ", 'this is '];
-    for (var p = 0; p < pats.length; p++) {
-      var pidx = txt.toLowerCase().indexOf(pats[p]);
-      if (pidx !== -1) {
-        var raw = txt.substring(pidx + pats[p].length).split(' ').slice(0, 3).join(' ').trim();
-        if (raw.length > 1) {
-          window._capturedGuestName = raw.charAt(0).toUpperCase() + raw.slice(1);
-          console.log('Guest name captured:', window._capturedGuestName);
-          break;
-        }
-      }
+
+    var tapZone      = document.getElementById("tap-zone");
+    var sessionLabel = document.getElementById("session-label");
+    var endBtn       = document.getElementById("end-btn");
+    var passTourName = document.getElementById("pass-tour-name");
+    var passQrImg    = document.getElementById("pass-qr-img");
+    var passDismiss  = document.getElementById("pass-dismiss");
+    var aiHud        = document.getElementById("ai-hud");
+    var aiLabel      = document.getElementById("ai-label");
+    var reconnectBtn = document.getElementById("reconnect-btn");
+    var attrCard     = document.getElementById("attraction-card");
+    var attrImg      = document.getElementById("attraction-img");
+    var attrName     = document.getElementById("attraction-name");
+    var attrFact     = document.getElementById("attraction-fact");
+    var attrPrice    = document.getElementById("attraction-price");
+    var attrDismiss  = document.getElementById("attraction-dismiss");
+    var attrTimer    = null;
+
+    var HUD_MAP = {
+      idle:         {cls:"s-idle",         lbl:"System Online"},
+      listening:    {cls:"s-listening",    lbl:"Listening..."},
+      thinking:     {cls:"s-thinking",     lbl:"Thinking..."},
+      speaking:     {cls:"s-speaking",     lbl:"Speaking..."},
+      executing:    {cls:"s-executing",    lbl:"Preparing..."},
+      reconnecting: {cls:"s-reconnecting", lbl:"Reconnecting to Bridge..."},
+      guest:        {cls:"s-guest",        lbl:"Guest Mode"}
+    };
+
+    function setAIState(k) {
+      var s = HUD_MAP[k] || HUD_MAP.idle;
+      aiHud.className = s.cls;
+      aiLabel.textContent = s.lbl;
+      document.body.classList.remove("st-listening","st-speaking","st-thinking");
+      if (k === "listening") document.body.classList.add("st-listening");
+      if (k === "speaking")  document.body.classList.add("st-speaking");
+      if (k === "thinking")  document.body.classList.add("st-thinking");
+      var bar = {listening:"Listening to You...",thinking:"Thinking...",speaking:"Your Agent is Speaking",executing:"Preparing Your Info...",idle:"Connected"};
+      if (bar[k]) sessionLabel.textContent = bar[k];
     }
-  }
-});
-        if(msg.type==='speech-update'){if(msg.role==='assistant'&&msg.status==='started')setAIState('speaking');if(msg.role==='assistant'&&msg.status==='stopped')setAIState('idle');}
-        if(msg.type==='tool-calls'){
-          var calls=msg.toolCalls||[];
-          for(var i=0;i<calls.length;i++){
-            var call=calls[i];
-            var fnName=call.function&&call.function.name;
-            var rawArgs=call.function&&call.function.arguments;
-            var args=(typeof rawArgs==='object'&&rawArgs!==null)?rawArgs:{};
-            if(typeof rawArgs==='string'){try{args=JSON.parse(rawArgs);}catch(e){}}
-            if(fnName==='show_attraction'){
-              var attrId=args.attraction_id||args.attractionId||'burj_khalifa';
-              showAttraction(attrId);
-              if(args.mood)setVibe(args.mood==='gold'?'luxury':args.mood==='blue'?'rain':'adventure');
-            }
-            if(fnName==='send_booking_to_human'){
-              var tourName=args.tour_type||args.tourType||args.tourName||'Desert Safari';
-              var guest=args.guest_name||args.guestName||args.name||window._capturedGuestName||'';
-              var date=args.preferred_date||args.preferredDate||args.date||'';
-              var pax=String(args.pax||args.pax_count||'');
-              console.log('[Kiosk] Booking:',{guest:guest,tourName:tourName,date:date,pax:pax});
-              var waMessage="Marhaba! Booking request from AI Kiosk.
 
-Tour: "+tourName;
-              if(guest)waMessage+="
-Guest: "+guest;
-              if(date)waMessage+="
-Date: "+date;
-              if(pax)waMessage+="
-Pax: "+pax;
-              waMessage+="
+    function setVibe(v) {
+      document.body.classList.remove("vibe-rain","vibe-luxury","vibe-adventure");
+      if (v) document.body.classList.add("vibe-" + v);
+    }
 
-Please confirm availability. Shukran!";
-              var waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(waMessage);
-              openPass(tourName,waUrl);
-              setVibe('luxury');
-              socket.emit('BOOKING_CONFIRMED',{guest:guest||'Guest',tourName:tourName,date:date||'Not specified',pax:pax||'Not specified',qrUrl:waUrl});
-              console.log('[Kiosk] BOOKING_CONFIRMED emitted');
+    function showAttraction(id) {
+      var d = ATTRACTIONS[id] || ATTRACTIONS.burj_khalifa;
+      attrImg.src = d.img;
+      attrImg.alt = d.name;
+      attrName.textContent  = d.name;
+      attrFact.textContent  = d.fact;
+      attrPrice.textContent = d.price;
+      attrCard.classList.add("open");
+      clearTimeout(attrTimer);
+      attrTimer = setTimeout(closeAttraction, 20000);
+      console.log("[Kiosk] Attraction shown:", id);
+    }
+
+    function closeAttraction() {
+      clearTimeout(attrTimer);
+      attrCard.classList.remove("open");
+    }
+
+    attrDismiss.addEventListener("click", closeAttraction);
+
+    function openPass(name, url) {
+      passTourName.textContent = name || "Your Experience";
+      passQrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + encodeURIComponent(url);
+      document.getElementById("the-pass").classList.add("open");
+      document.body.classList.add("pass-open");
+      closeAttraction();
+    }
+
+    function closePass() {
+      document.getElementById("the-pass").classList.remove("open");
+      document.body.classList.remove("pass-open");
+    }
+
+    passDismiss.addEventListener("click", closePass);
+
+    var socket = io(RENDER_BRIDGE_URL, {
+      transports: ["polling","websocket"],
+      rememberUpgrade: true,
+      timeout: 20000,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      rejectUnauthorized: false
+    });
+
+    var flashTimer = null;
+
+    socket.on("connect", function() {
+      document.body.classList.remove("bridge-reconnecting");
+      if (!document.body.classList.contains("guest-mode") && !document.body.classList.contains("call-active")) {
+        setAIState("idle");
+        aiHud.style.borderColor = "rgba(74,222,128,0.5)";
+        aiHud.style.boxShadow   = "0 0 18px rgba(74,222,128,0.15)";
+        clearTimeout(flashTimer);
+        flashTimer = setTimeout(function() { aiHud.style.borderColor = ""; aiHud.style.boxShadow = ""; }, 1800);
+      }
+      console.log("Socket | ID: " + socket.id + " | Transport: " + socket.io.engine.transport.name);
+    });
+
+    socket.on("disconnect", function() {
+      document.body.classList.add("bridge-reconnecting");
+      if (!document.body.classList.contains("call-active")) setAIState("reconnecting");
+    });
+
+    socket.on("connect_error", function(err) {
+      document.body.classList.add("bridge-reconnecting");
+      if (!document.body.classList.contains("call-active")) setAIState("reconnecting");
+      console.error("Socket error: " + err.message);
+    });
+
+    socket.on("AI_STATE_UPDATE", function(d) {
+      if (document.body.classList.contains("guest-mode")) return;
+      var m = {LISTENING:"listening",THINKING:"thinking",SPEAKING:"speaking",EXECUTING:"executing",IDLE:"idle"};
+      setAIState(m[d.state] || "idle");
+    });
+
+    socket.on("COMMAND_UPDATE_UI", function(d) {
+      setVibe(d.vibe);
+      if (!document.body.classList.contains("guest-mode")) setAIState("executing");
+      var delay = d.vibe === "luxury" ? 1800 : 600;
+      if (d.viewType === "tour_details" || d.viewType === "booking_qr") {
+        setTimeout(function() { openPass(d.tourName, d.qrUrl); setAIState("idle"); }, delay);
+      } else {
+        setTimeout(function() { setAIState("idle"); }, delay);
+      }
+    });
+
+    reconnectBtn.addEventListener("click", function() {
+      reconnectBtn.disabled = true;
+      reconnectBtn.classList.add("retrying");
+      setTimeout(function() { window.location.reload(); }, 500);
+    });
+
+    var wakeLock = null;
+    async function requestWakeLock() {
+      try {
+        if ("wakeLock" in navigator) {
+          wakeLock = await navigator.wakeLock.request("screen");
+          console.log("Screen Wake Lock is active");
+        }
+      } catch(e) { console.error("Wake Lock:", e.message); }
+    }
+    document.addEventListener("visibilitychange", function() {
+      if (wakeLock !== null && document.visibilityState === "visible") requestWakeLock();
+    });
+    requestWakeLock();
+
+    function bootVapi() {
+      if (typeof window.Vapi === "undefined") {
+        document.body.classList.add("guest-mode");
+        tapZone.style.pointerEvents = "none";
+        setAIState("guest");
+        return;
+      }
+      document.body.classList.remove("guest-mode");
+      aiLabel.textContent = "System Online";
+      console.log("Vapi CDN confirmed | ASSISTANT_ID: " + ASSISTANT_ID);
+
+      var vapi = new window.Vapi(VAPI_PUBLIC_KEY);
+      tapZone.style.pointerEvents = "auto";
+      if (!document.body.classList.contains("bridge-reconnecting")) setAIState("idle");
+
+      tapZone.addEventListener("click", function() {
+        if (document.body.classList.contains("call-active")) return;
+        if (document.body.classList.contains("bridge-reconnecting")) return;
+        vapi.start(ASSISTANT_ID);
+        sessionLabel.textContent = "Connecting...";
+        setAIState("thinking");
+      });
+
+      endBtn.addEventListener("click", function() { vapi.stop(); });
+      vapi.on("speech-start", function() { setAIState("listening"); });
+      vapi.on("speech-end",   function() { setAIState("thinking"); });
+
+      window._capturedGuestName = "";
+
+      vapi.on("message", function(m) {
+        if (m.type === "transcript" && m.role === "user" && m.transcriptType === "final") {
+          var txt = m.transcript || "";
+          var pats = ["my name is ", "i am ", "i'm ", "this is "];
+          for (var p = 0; p < pats.length; p++) {
+            var pidx = txt.toLowerCase().indexOf(pats[p]);
+            if (pidx !== -1) {
+              var raw = txt.substring(pidx + pats[p].length).split(" ").slice(0, 3).join(" ").trim();
+              if (raw.length > 1) {
+                window._capturedGuestName = raw.charAt(0).toUpperCase() + raw.slice(1);
+                console.log("Guest name captured:", window._capturedGuestName);
+                break;
+              }
             }
           }
         }
       });
-      vapiInstance.on('call-start',function(){document.body.classList.add('call-active');sessionLabel.textContent='Connected';setAIState('idle');});
-      vapiInstance.on('call-end',function(){document.body.classList.remove('call-active');setVibe(null);closePass();closeAttraction();setAIState('idle');tapZone.style.pointerEvents='auto';});
-      vapiInstance.on('error',function(err){console.error('Vapi error:',err);document.body.classList.remove('call-active');setAIState('idle');});
+
+      vapi.on("message", function(msg) {
+        if (msg.type === "speech-update") {
+          if (msg.role === "assistant" && msg.status === "started") setAIState("speaking");
+          if (msg.role === "assistant" && msg.status === "stopped")  setAIState("idle");
+        }
+        if (msg.type === "tool-calls") {
+          var calls = msg.toolCalls || [];
+          for (var i = 0; i < calls.length; i++) {
+            var call   = calls[i];
+            var fn     = call.function && call.function.name;
+            var raw    = call.function && call.function.arguments;
+            var args   = (typeof raw === "object" && raw !== null) ? raw : {};
+            if (typeof raw === "string") { try { args = JSON.parse(raw); } catch(e) {} }
+
+            if (fn === "show_attraction") {
+              var id = args.attraction_id || args.attractionId || "burj_khalifa";
+              showAttraction(id);
+              if (args.mood) {
+                var moods = {gold:"luxury", blue:"rain", adventure:"adventure"};
+                setVibe(moods[args.mood] || null);
+              }
+            }
+
+            if (fn === "send_booking_to_human") {
+              var tour  = args.tour_type      || args.tourType   || args.tourName  || "Desert Safari";
+              var guest = args.guest_name     || args.guestName  || args.name      || window._capturedGuestName || "";
+              var date  = args.preferred_date || args.preferredDate || args.date   || "";
+              var pax   = String(args.pax     || args.pax_count  || "");
+              console.log("[Kiosk] Booking:", {guest:guest, tour:tour, date:date, pax:pax});
+
+              var waMsgParts = ["Marhaba! Booking from AI Kiosk.", "", "Tour: " + tour];
+              if (guest) waMsgParts.push("Guest: " + guest);
+              if (date)  waMsgParts.push("Date: " + date);
+              if (pax)   waMsgParts.push("Pax: " + pax);
+              waMsgParts.push("", "Please confirm. Shukran!");
+              var waMsg = waMsgParts.join("\n");
+
+              var waUrl = "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(waMsg);
+              openPass(tour, waUrl);
+              setVibe("luxury");
+              socket.emit("BOOKING_CONFIRMED", {
+                guest:    guest    || "Guest",
+                tourName: tour,
+                date:     date     || "Not specified",
+                pax:      pax      || "Not specified",
+                qrUrl:    waUrl
+              });
+              console.log("[Kiosk] BOOKING_CONFIRMED emitted");
+            }
+          }
+        }
+      });
+
+      vapi.on("call-start", function() {
+        document.body.classList.add("call-active");
+        sessionLabel.textContent = "Connected";
+        setAIState("idle");
+      });
+
+      vapi.on("call-end", function() {
+        document.body.classList.remove("call-active");
+        setVibe(null);
+        closePass();
+        closeAttraction();
+        setAIState("idle");
+        tapZone.style.pointerEvents = "auto";
+      });
+
+      vapi.on("error", function(err) {
+        console.error("Vapi error:", err);
+        document.body.classList.remove("call-active");
+        setAIState("idle");
+      });
     }
-    if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',bootVapi);}else{bootVapi();}
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", bootVapi);
+    } else {
+      bootVapi();
+    }
   </script>
 </body>
 </html>
