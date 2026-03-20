@@ -235,9 +235,24 @@
       endBtn.addEventListener('click',function(){vapiInstance.stop();});
       vapiInstance.on('speech-start',function(){setAIState('listening');});
       vapiInstance.on('speech-end',function(){setAIState('thinking');});
-      window._capturedGuestName='';
-      vapiInstance.on('message',function(m){if(m.type==='transcript'&&m.role==='user'&&m.transcriptType==='final'){var txt=m.transcript||'';var match=txt.match(/(?:my name is|i am|i'm|this is)\s+([a-z][a-z\s]{1,30})/i);if(match&&match[1]){var n=match[1].trim().replace(/\s+/g,' ');window._capturedGuestName=n.replace(/\b\w/g,function(c){return c.toUpperCase();});console.log('Guest name captured from transcript:',window._capturedGuestName);}}});
-      vapiInstance.on('message',function(msg){
+      window._capturedGuestName = "";
+  vapiInstance.on('message', function(m) {
+  if (m.type === 'transcript' && m.role === 'user' && m.transcriptType === 'final') {
+    var txt = m.transcript || '';
+    var pats = ['my name is ', 'i am ', "i'm ", 'this is '];
+    for (var p = 0; p < pats.length; p++) {
+      var pidx = txt.toLowerCase().indexOf(pats[p]);
+      if (pidx !== -1) {
+        var raw = txt.substring(pidx + pats[p].length).split(' ').slice(0, 3).join(' ').trim();
+        if (raw.length > 1) {
+          window._capturedGuestName = raw.charAt(0).toUpperCase() + raw.slice(1);
+          console.log('Guest name captured:', window._capturedGuestName);
+          break;
+        }
+      }
+    }
+  }
+});
         if(msg.type==='speech-update'){if(msg.role==='assistant'&&msg.status==='started')setAIState('speaking');if(msg.role==='assistant'&&msg.status==='stopped')setAIState('idle');}
         if(msg.type==='tool-calls'){
           var calls=msg.toolCalls||[];
