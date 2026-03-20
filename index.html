@@ -122,15 +122,32 @@
     #signature{position:fixed;bottom:20px;left:0;right:0;text-align:center;z-index:6;pointer-events:none;opacity:0;animation:fadeIn 1.5s 1.4s ease forwards;transition:opacity .8s ease}
     body.call-active #signature{opacity:0}
     #signature span{font-size:.5rem;letter-spacing:.5em;text-transform:uppercase;color:rgba(255,255,255,.18)}
-    #attraction-card{position:fixed;bottom:48px;left:52px;z-index:11;width:300px;border-radius:20px;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,.60),0 0 0 1px rgba(212,175,55,.25);transform:translateY(120%) translateX(-20px);opacity:0;pointer-events:none;transition:transform 1s var(--ease),opacity .8s var(--ease)}
-    #attraction-card.open{transform:translateY(0) translateX(0);opacity:1;pointer-events:auto}
-    #attraction-img{display:block;width:100%;height:200px;object-fit:cover;object-position:center}
-    .attraction-body{background:linear-gradient(135deg,rgba(5,5,10,.95),rgba(20,14,0,.95));padding:18px 20px 14px;border-top:1px solid rgba(212,175,55,.20)}
-    .attraction-name{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:600;color:white;letter-spacing:.04em;margin-bottom:5px}
-    .attraction-fact{font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.50);line-height:1.7;margin-bottom:10px}
-    .attraction-price{font-size:.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
-    .attraction-dismiss{position:absolute;top:10px;right:12px;font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.45);background:rgba(0,0,0,.40);border:none;border-radius:20px;padding:4px 10px;cursor:pointer;transition:color .3s ease}
-    .attraction-dismiss:hover{color:white}
+    /* Attraction Fullscreen Modal */
+    #attraction-modal{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);opacity:0;pointer-events:none;transition:opacity .5s var(--ease)}
+    #attraction-modal.open{opacity:1;pointer-events:auto}
+    .attr-box{position:relative;width:min(860px,90vw);border-radius:24px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,.80),0 0 0 1px rgba(212,175,55,.30);animation:attrReveal .6s var(--ease) both}
+    @keyframes attrReveal{from{transform:scale(.92) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+    .attr-slides{position:relative;height:460px;overflow:hidden}
+    .attr-slide{position:absolute;inset:0;opacity:0;transition:opacity .6s ease}
+    .attr-slide.active{opacity:1}
+    .attr-slide img{width:100%;height:100%;object-fit:cover;object-position:center}
+    .attr-slide-caption{position:absolute;bottom:0;left:0;right:0;padding:40px 32px 20px;background:linear-gradient(to top,rgba(0,0,0,.75),transparent);font-size:.72rem;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.80)}
+    .attr-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;border:1px solid rgba(212,175,55,.50);background:rgba(0,0,0,.50);color:var(--gold);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .25s ease;z-index:2}
+    .attr-nav:hover{background:rgba(212,175,55,.25);border-color:var(--gold)}
+    .attr-nav.prev{left:14px}
+    .attr-nav.next{right:14px}
+    .attr-dots{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:2}
+    .attr-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35);cursor:pointer;transition:background .3s ease}
+    .attr-dot.active{background:var(--gold)}
+    .attr-info{background:linear-gradient(135deg,rgba(8,6,2,.97),rgba(18,12,0,.97));padding:24px 32px 20px;border-top:1px solid rgba(212,175,55,.20)}
+    .attr-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+    .attr-name{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:600;color:white;letter-spacing:.04em;line-height:1.1}
+    .attr-price-badge{background:rgba(212,175,55,.15);border:1px solid rgba(212,175,55,.40);border-radius:20px;padding:6px 16px;font-size:.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+    .attr-facts{display:flex;flex-direction:column;gap:6px;margin-bottom:4px}
+    .attr-fact-item{display:flex;align-items:center;gap:10px;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+    .attr-fact-item::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0}
+    .attr-close{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.70);font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all .25s ease}
+    .attr-close:hover{background:rgba(255,65,43,.30);border-color:rgba(255,65,43,.60);color:white}
   </style>
 </head>
 <body>
@@ -163,14 +180,18 @@
     <span id="session-label">Connecting...</span>
     <button id="end-btn">End Session</button>
   </div>
-  <div id="attraction-card">
-    <img id="attraction-img" src="" alt="">
-    <div class="attraction-body">
-      <div class="attraction-name" id="attraction-name">-</div>
-      <div class="attraction-fact" id="attraction-fact">-</div>
-      <div class="attraction-price" id="attraction-price">-</div>
+  <div id="attraction-modal">
+    <div class="attr-box">
+      <button class="attr-close" id="attr-close">&#x2715;</button>
+      <div class="attr-slides" id="attr-slides"></div>
+      <div class="attr-info">
+        <div class="attr-header">
+          <div class="attr-name" id="attr-name">-</div>
+          <div class="attr-price-badge" id="attr-price">-</div>
+        </div>
+        <div class="attr-facts" id="attr-facts"></div>
+      </div>
     </div>
-    <button class="attraction-dismiss" id="attraction-dismiss">Dismiss X</button>
   </div>
   <div id="the-pass">
     <span class="pass-label">Scan to Connect on WhatsApp</span>
@@ -194,11 +215,56 @@
     var WHATSAPP_NUMBER   = "971506313291";
 
     var ATTRACTIONS = {
-      burj_khalifa:  {name:"Burj Khalifa",  img:"https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80", fact:"Worlds tallest building - 828m - 360 degree views", price:"From AED 181 / USD 49"},
-      desert_safari: {name:"Desert Safari", img:"https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=600&q=80", fact:"Dune bashing - BBQ dinner - Live shows",             price:"From AED 140 / USD 38"},
-      palm_jumeirah: {name:"Palm Jumeirah", img:"https://images.unsplash.com/photo-1582672060674-bc2bd808a8b5?w=600&q=80", fact:"Iconic palm island - Atlantis - Beach clubs",         price:"From AED 350 / USD 95"},
-      dubai_mall:    {name:"Dubai Mall",    img:"https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?w=600&q=80", fact:"Worlds largest mall - 1200 stores - Aquarium",       price:"Free entry"},
-      dhow_cruise:   {name:"Dhow Cruise",   img:"https://images.unsplash.com/photo-1578895101408-1a36b834405b?w=600&q=80", fact:"5-star buffet - 2-hour cruise - Tanoura show",      price:"From AED 140 / USD 38"}
+      burj_khalifa: {
+        name: "Burj Khalifa",
+        slides: [
+          { img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=1200&q=85", caption: "828m — World's Tallest Building" },
+          { img: "https://images.unsplash.com/photo-1582672059253-a916e3e41860?w=1200&q=85", caption: "Breathtaking 360° Views of Dubai" },
+          { img: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=1200&q=85", caption: "Dubai Skyline at Golden Hour" }
+        ],
+        facts: ["124th & 125th floor access", "Skip-the-line with SKY Level upgrade", "Private lounge & refreshments available"],
+        price: "From AED 181 / USD 49"
+      },
+      desert_safari: {
+        name: "Evening Desert Safari",
+        slides: [
+          { img: "https://images.unsplash.com/photo-1451337516015-6b6e9a44a8a3?w=1200&q=85", caption: "Golden Dunes at Sunset" },
+          { img: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1200&q=85", caption: "Thrilling Dune Bashing Experience" },
+          { img: "https://images.unsplash.com/photo-1548013146-72479768bada?w=1200&q=85", caption: "Authentic Bedouin Camp & BBQ Dinner" }
+        ],
+        facts: ["Sunset dune bashing in 4x4 vehicles", "Traditional BBQ dinner under the stars", "Live shows: Tanoura, belly dancing, fire"],
+        price: "From AED 140 / USD 38"
+      },
+      palm_jumeirah: {
+        name: "Palm Jumeirah",
+        slides: [
+          { img: "https://images.unsplash.com/photo-1518684079-3c830dcef090?w=1200&q=85", caption: "The Iconic Palm Island from Above" },
+          { img: "https://images.unsplash.com/photo-1582672060674-bc2bd808a8b5?w=1200&q=85", caption: "Atlantis Hotel & Aquaventure" },
+          { img: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=1200&q=85", caption: "Private Beach Clubs & Luxury Living" }
+        ],
+        facts: ["World-famous man-made island", "Home to Atlantis & luxury beach clubs", "Monorail ride with panoramic views"],
+        price: "From AED 350 / USD 95"
+      },
+      dubai_mall: {
+        name: "Dubai Mall",
+        slides: [
+          { img: "https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?w=1200&q=85", caption: "World's Largest Shopping Mall" },
+          { img: "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=1200&q=85", caption: "Dubai Aquarium — 33,000 Aquatic Animals" },
+          { img: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&q=85", caption: "Dubai Fountain — World's Largest" }
+        ],
+        facts: ["1,200+ stores across 5.4M sq ft", "Dubai Aquarium & Underwater Zoo", "Dubai Fountain show every 30 minutes"],
+        price: "Free entry"
+      },
+      dhow_cruise: {
+        name: "Dhow Cruise Marina",
+        slides: [
+          { img: "https://images.unsplash.com/photo-1578895101408-1a36b834405b?w=1200&q=85", caption: "Luxury Dhow on Dubai Marina" },
+          { img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1200&q=85", caption: "Dubai Marina Skyline at Night" },
+          { img: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&q=85", caption: "5-Star Buffet & Live Entertainment" }
+        ],
+        facts: ["2-hour cruise past glittering skyscrapers", "International 5-star buffet dinner", "Live Tanoura & international shows"],
+        price: "From AED 140 / USD 38"
+      }
     };
 
     var tapZone      = document.getElementById("tap-zone");
@@ -210,13 +276,15 @@
     var aiHud        = document.getElementById("ai-hud");
     var aiLabel      = document.getElementById("ai-label");
     var reconnectBtn = document.getElementById("reconnect-btn");
-    var attrCard     = document.getElementById("attraction-card");
-    var attrImg      = document.getElementById("attraction-img");
-    var attrName     = document.getElementById("attraction-name");
-    var attrFact     = document.getElementById("attraction-fact");
-    var attrPrice    = document.getElementById("attraction-price");
-    var attrDismiss  = document.getElementById("attraction-dismiss");
+    var attrModal    = document.getElementById("attraction-modal");
+    var attrSlidesCt = document.getElementById("attr-slides");
+    var attrNameEl   = document.getElementById("attr-name");
+    var attrPriceEl  = document.getElementById("attr-price");
+    var attrFactsEl  = document.getElementById("attr-facts");
+    var attrCloseBtn = document.getElementById("attr-close");
     var attrTimer    = null;
+    var attrCurrent  = 0;
+    var attrTotal    = 0;
 
     var HUD_MAP = {
       idle:         {cls:"s-idle",         lbl:"System Online"},
@@ -246,24 +314,91 @@
     }
 
     function showAttraction(id) {
-      var d = ATTRACTIONS[id] || ATTRACTIONS.burj_khalifa;
-      attrImg.src = d.img;
-      attrImg.alt = d.name;
-      attrName.textContent  = d.name;
-      attrFact.textContent  = d.fact;
-      attrPrice.textContent = d.price;
-      attrCard.classList.add("open");
+      var d = ATTRACTIONS[id] || ATTRACTIONS.desert_safari;
+      attrCurrent = 0;
+      attrTotal = d.slides.length;
+
+      // Build slides
+      attrSlidesCt.innerHTML = "";
+      d.slides.forEach(function(s, i) {
+        var slide = document.createElement("div");
+        slide.className = "attr-slide" + (i === 0 ? " active" : "");
+        var img = document.createElement("img");
+        img.src = s.img;
+        img.alt = s.caption;
+        img.loading = "lazy";
+        var cap = document.createElement("div");
+        cap.className = "attr-slide-caption";
+        cap.textContent = s.caption;
+        slide.appendChild(img);
+        slide.appendChild(cap);
+        attrSlidesCt.appendChild(slide);
+      });
+
+      // Nav arrows
+      if (attrTotal > 1) {
+        var prev = document.createElement("button");
+        prev.className = "attr-nav prev";
+        prev.innerHTML = "&#8592;";
+        prev.onclick = function() { attrGo(attrCurrent - 1); };
+        var next = document.createElement("button");
+        next.className = "attr-nav next";
+        next.innerHTML = "&#8594;";
+        next.onclick = function() { attrGo(attrCurrent + 1); };
+        attrSlidesCt.appendChild(prev);
+        attrSlidesCt.appendChild(next);
+
+        // Dots
+        var dots = document.createElement("div");
+        dots.className = "attr-dots";
+        dots.id = "attr-dots";
+        for (var j = 0; j < attrTotal; j++) {
+          var dot = document.createElement("div");
+          dot.className = "attr-dot" + (j === 0 ? " active" : "");
+          dot.setAttribute("data-idx", j);
+          dot.onclick = (function(idx) { return function() { attrGo(idx); }; })(j);
+          dots.appendChild(dot);
+        }
+        attrSlidesCt.appendChild(dots);
+      }
+
+      // Info
+      attrNameEl.textContent  = d.name;
+      attrPriceEl.textContent = d.price;
+      attrFactsEl.innerHTML   = "";
+      d.facts.forEach(function(f) {
+        var el = document.createElement("div");
+        el.className = "attr-fact-item";
+        el.textContent = f;
+        attrFactsEl.appendChild(el);
+      });
+
+      attrModal.classList.add("open");
       clearTimeout(attrTimer);
-      attrTimer = setTimeout(closeAttraction, 20000);
+      attrTimer = setTimeout(closeAttraction, 30000);
       console.log("[Kiosk] Attraction shown:", id);
+    }
+
+    function attrGo(idx) {
+      var slides = attrSlidesCt.querySelectorAll(".attr-slide");
+      var dots   = document.getElementById("attr-dots");
+      if (!slides.length) return;
+      slides[attrCurrent].classList.remove("active");
+      if (dots) dots.children[attrCurrent].classList.remove("active");
+      attrCurrent = (idx + attrTotal) % attrTotal;
+      slides[attrCurrent].classList.add("active");
+      if (dots) dots.children[attrCurrent].classList.add("active");
     }
 
     function closeAttraction() {
       clearTimeout(attrTimer);
-      attrCard.classList.remove("open");
+      attrModal.classList.remove("open");
     }
 
-    attrDismiss.addEventListener("click", closeAttraction);
+    attrCloseBtn.addEventListener("click", closeAttraction);
+    attrModal.addEventListener("click", function(e) {
+      if (e.target === attrModal) closeAttraction();
+    });
 
     function openPass(name, url) {
       passTourName.textContent = name || "Your Experience";
