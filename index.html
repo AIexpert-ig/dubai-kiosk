@@ -416,14 +416,13 @@
     passDismiss.addEventListener("click", closePass);
 
     var socket = io(RENDER_BRIDGE_URL, {
-      transports: ["polling","websocket"],
-      rememberUpgrade: true,
-      timeout: 20000,
+      transports: ["websocket"],  // must match bridge — no polling
+      upgrade: false,             // prevent protocol switch causing ECONNRESET
       reconnection: true,
-      reconnectionAttempts: Infinity,
+      reconnectionAttempts: 10,
       reconnectionDelay: 2000,
       reconnectionDelayMax: 10000,
-      rejectUnauthorized: false
+      timeout: 45000              // matches bridge connectTimeout
     });
 
     var flashTimer = null;
