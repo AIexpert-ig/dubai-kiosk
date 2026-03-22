@@ -10,6 +10,17 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <title>Travel Expert ™ | The AI Concierge</title>
+  <!-- Open Graph / Social Preview -->
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://aiexpert-ig.github.io/dubai-kiosk/">
+  <meta property="og:title"       content="Dubai AI Kiosk | Multimodal Guest Experience">
+  <meta property="og:description" content="Experience the future of hospitality. A v2.0.1-finalized AI Kiosk featuring real-time mood engine and VIP registries.">
+  <meta property="og:image"       content="https://aiexpert-ig.github.io/dubai-kiosk/preview-image.jpg">
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="Dubai AI Kiosk | Multimodal Guest Experience">
+  <meta name="twitter:description" content="Experience the future of hospitality. A v2.0.1-finalized AI Kiosk featuring real-time mood engine and VIP registries.">
+  <meta name="twitter:image"       content="https://aiexpert-ig.github.io/dubai-kiosk/preview-image.jpg">
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@200;300;400;700&display=swap" rel="stylesheet">
@@ -419,7 +430,7 @@
       transports: ["websocket"],  // must match bridge — no polling
       upgrade: false,             // prevent protocol switch causing ECONNRESET
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: 20,
       reconnectionDelay: 2000,
       reconnectionDelayMax: 10000,
       timeout: 45000              // matches bridge connectTimeout
@@ -454,6 +465,28 @@
       if (document.body.classList.contains("guest-mode")) return;
       var m = {LISTENING:"listening",THINKING:"thinking",SPEAKING:"speaking",EXECUTING:"executing",IDLE:"idle"};
       setAIState(m[d.state] || "idle");
+    });
+
+    // ── v2.0.1 UI_UPDATE handler — handles mood, menu, attraction, avatar_state ─
+    socket.on("UI_UPDATE", function(payload) {
+      console.log("[KIOSK] Syncing v2.0.1 Payload:", payload);
+      if (!payload || !payload.type) return;
+      switch (payload.type) {
+        case "SET_MOOD":
+          if (payload.data && payload.data.mood) setVibe(payload.data.mood);
+          break;
+        case "SHOW_ATTRACTION":
+          if (payload.data && payload.data.attraction_id) showAttraction(payload.data.attraction_id);
+          break;
+        case "SHOW_MENU":
+          console.log("[KIOSK] Menu payload received:", payload.data && payload.data.menu_type, "—", payload.data && payload.data.filtered_count, "items");
+          break;
+        case "AVATAR_STATE":
+          console.log("[KIOSK] Avatar state:", payload.data && payload.data.expression, "speaking:", payload.data && payload.data.speaking);
+          break;
+        default:
+          console.log("[KIOSK] Unhandled UI_UPDATE type:", payload.type);
+      }
     });
 
     socket.on("COMMAND_UPDATE_UI", function(d) {
